@@ -1,0 +1,1231 @@
+openapi: 3.0.3
+info:
+  title: 班导师管理系统 API
+  version: 0.1.0
+  description: |
+    面向前端的后端接口定义。实现以此为准，运行时 springdoc 导出的 openapi.json 仅代表当前已实现接口。
+servers:
+  - url: http://localhost:8080
+tags:
+  - name: health
+  - name: auth
+  - name: openapi
+  - name: users
+  - name: activities
+  - name: plans
+  - name: evaluations
+  - name: reports
+paths:
+  /health:
+    get:
+      tags: [health]
+      summary: 健康检查
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+
+  /openapi:
+    get:
+      tags: [openapi]
+      summary: OpenAPI/Swagger 地址提示
+      description: |
+        用于开发期快速获取 Swagger UI 与 /v3/api-docs 地址。
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  swaggerUi:
+                    type: string
+                    example: http://localhost:8080/swagger-ui/index.html
+                  apiDocs:
+                    type: string
+                    example: http://localhost:8080/v3/api-docs
+
+  /auth/login:
+    post:
+      tags: [auth]
+      summary: 登录
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenPair"
+        "401":
+          $ref: "#/components/responses/Error401"
+        "422":
+          $ref: "#/components/responses/Error422"
+
+  /auth/refresh:
+    post:
+      tags: [auth]
+      summary: 刷新 token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefreshRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenPair"
+        "401":
+          $ref: "#/components/responses/Error401"
+        "422":
+          $ref: "#/components/responses/Error422"
+
+  /auth/logout:
+    post:
+      tags: [auth]
+      summary: 登出（撤销 refresh）
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LogoutRequest"
+      responses:
+        "204":
+          description: No Content
+        "401":
+          $ref: "#/components/responses/Error401"
+        "422":
+          $ref: "#/components/responses/Error422"
+
+  /auth/me:
+    get:
+      tags: [auth]
+      summary: 当前用户信息
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserMe"
+        "401":
+          $ref: "#/components/responses/Error401"
+
+  /users/import:
+    post:
+      tags: [users]
+      summary: CSV 导入用户（创建/更新）
+      description: |
+        CSV 为 UTF-8、逗号分隔，可包含表头，字段 id,name,collegeName。
+        id 为学号/工号（账号 id，字符串）。账号唯一性为 (user_type, user_no)。
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userType
+          in: query
+          required: true
+          schema:
+            $ref: "#/components/schemas/UserType"
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImportUsersResult"
+        "401":
+          $ref: "#/components/responses/Error401"
+        "403":
+          $ref: "#/components/responses/Error403"
+        "422":
+          $ref: "#/components/responses/Error422"
+
+  /users/{userId}/password:reset:
+    post:
+      tags: [users]
+      summary: 上级重置用户登录凭证
+      description: |
+        由上级（管理员/导师等具备权限者）为指定用户重置登录凭证。
+        请求体语义与登录一致：前端传入 clientSalt/clientHash。
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserPasswordResetRequest"
+      responses:
+        "204":
+          description: No Content
+        "401":
+          $ref: "#/components/responses/Error401"
+        "403":
+          $ref: "#/components/responses/Error403"
+        "404":
+          $ref: "#/components/responses/Error404"
+        "422":
+          $ref: "#/components/responses/Error422"
+
+  /activities:
+    get:
+      tags: [activities]
+      summary: 活动列表
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
+        - name: term
+          in: query
+          required: false
+          schema:
+            type: string
+            example: 2026-02-23-1
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/ActivityStatus"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PageActivity"
+        "401":
+          $ref: "#/components/responses/Error401"
+    post:
+      tags: [activities]
+      summary: 创建活动（教师）
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ActivityCreateRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Activity"
+        "401":
+          $ref: "#/components/responses/Error401"
+        "403":
+          $ref: "#/components/responses/Error403"
+        "422":
+          $ref: "#/components/responses/Error422"
+
+  /activities/{activityId}:
+    get:
+      tags: [activities]
+      summary: 活动详情
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: activityId
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Activity"
+        "401":
+          $ref: "#/components/responses/Error401"
+        "404":
+          $ref: "#/components/responses/Error404"
+
+  /activities/{activityId}/publish:
+    post:
+      tags: [activities]
+      summary: 发布活动（教师）
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: activityId
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        "204":
+          description: No Content
+        "401":
+          $ref: "#/components/responses/Error401"
+        "403":
+          $ref: "#/components/responses/Error403"
+        "404":
+          $ref: "#/components/responses/Error404"
+
+  /activities/{activityId}/signups:
+    post:
+      tags: [activities]
+      summary: 报名活动（学生）
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: activityId
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                note:
+                  type: string
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ActivitySignup"
+        "401":
+          $ref: "#/components/responses/Error401"
+        "404":
+          $ref: "#/components/responses/Error404"
+        "409":
+          $ref: "#/components/responses/Error409"
+        "422":
+          $ref: "#/components/responses/Error422"
+    get:
+      tags: [activities]
+      summary: 报名列表（教师）
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: activityId
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/SignupStatus"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PageActivitySignup"
+        "401":
+          $ref: "#/components/responses/Error401"
+        "403":
+          $ref: "#/components/responses/Error403"
+
+  /activities/{activityId}/signups/me:
+    delete:
+      tags: [activities]
+      summary: 取消我的报名
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: activityId
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        "204":
+          description: No Content
+        "401":
+          $ref: "#/components/responses/Error401"
+        "404":
+          $ref: "#/components/responses/Error404"
+
+  /activities/{activityId}/signups/{signupId}/approve:
+    post:
+      tags: [activities]
+      summary: 审核通过（教师）
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: activityId
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+        - name: signupId
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        "204":
+          description: No Content
+        "401":
+          $ref: "#/components/responses/Error401"
+        "403":
+          $ref: "#/components/responses/Error403"
+        "404":
+          $ref: "#/components/responses/Error404"
+        "422":
+          $ref: "#/components/responses/Error422"
+
+  /activities/{activityId}/signups/{signupId}/reject:
+    post:
+      tags: [activities]
+      summary: 审核拒绝（教师）
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: activityId
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+        - name: signupId
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+      responses:
+        "204":
+          description: No Content
+        "401":
+          $ref: "#/components/responses/Error401"
+        "403":
+          $ref: "#/components/responses/Error403"
+        "404":
+          $ref: "#/components/responses/Error404"
+
+  /plans:
+    get:
+      tags: [plans]
+      summary: 计划列表（个人/班级）
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
+        - name: term
+          in: query
+          required: false
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PagePlan"
+        "401":
+          $ref: "#/components/responses/Error401"
+    post:
+      tags: [plans]
+      summary: 创建计划
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PlanCreateRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Plan"
+        "401":
+          $ref: "#/components/responses/Error401"
+        "422":
+          $ref: "#/components/responses/Error422"
+
+  /plans/{planId}:
+    get:
+      tags: [plans]
+      summary: 计划详情（含条目）
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: planId
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlanDetail"
+        "401":
+          $ref: "#/components/responses/Error401"
+        "404":
+          $ref: "#/components/responses/Error404"
+
+  /plans/{planId}/items:
+    post:
+      tags: [plans]
+      summary: 新增计划条目
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: planId
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PlanItemCreateRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlanItem"
+        "401":
+          $ref: "#/components/responses/Error401"
+        "404":
+          $ref: "#/components/responses/Error404"
+        "422":
+          $ref: "#/components/responses/Error422"
+
+  /plans/{planId}/items/{itemId}:
+    patch:
+      tags: [plans]
+      summary: 更新计划条目
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: planId
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+        - name: itemId
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PlanItemUpdateRequest"
+      responses:
+        "204":
+          description: No Content
+        "401":
+          $ref: "#/components/responses/Error401"
+        "404":
+          $ref: "#/components/responses/Error404"
+        "422":
+          $ref: "#/components/responses/Error422"
+    delete:
+      tags: [plans]
+      summary: 删除计划条目
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: planId
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+        - name: itemId
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        "204":
+          description: No Content
+        "401":
+          $ref: "#/components/responses/Error401"
+        "404":
+          $ref: "#/components/responses/Error404"
+
+  /plan-items/{itemId}/progress:
+    get:
+      tags: [plans]
+      summary: 条目进度历史
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: itemId
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PlanItemProgress"
+        "401":
+          $ref: "#/components/responses/Error401"
+        "403":
+          $ref: "#/components/responses/Error403"
+        "404":
+          $ref: "#/components/responses/Error404"
+    post:
+      tags: [plans]
+      summary: 追加条目进度记录
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: itemId
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PlanItemProgressCreateRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlanItemProgress"
+        "401":
+          $ref: "#/components/responses/Error401"
+        "403":
+          $ref: "#/components/responses/Error403"
+        "404":
+          $ref: "#/components/responses/Error404"
+        "422":
+          $ref: "#/components/responses/Error422"
+
+  /evaluations:
+    get:
+      tags: [evaluations]
+      summary: 评价列表
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
+        - name: term
+          in: query
+          required: false
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PageEvaluation"
+        "401":
+          $ref: "#/components/responses/Error401"
+    post:
+      tags: [evaluations]
+      summary: 创建评价（教师）
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EvaluationCreateRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Evaluation"
+        "401":
+          $ref: "#/components/responses/Error401"
+        "403":
+          $ref: "#/components/responses/Error403"
+        "422":
+          $ref: "#/components/responses/Error422"
+
+  /evaluations/{evaluationId}:
+    get:
+      tags: [evaluations]
+      summary: 评价详情（含明细）
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: evaluationId
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EvaluationDetail"
+        "401":
+          $ref: "#/components/responses/Error401"
+        "404":
+          $ref: "#/components/responses/Error404"
+
+  /reports/plan-completion:
+    get:
+      tags: [reports]
+      summary: 计划完成率报表
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: term
+          in: query
+          required: true
+          schema: { type: string }
+        - name: collegeId
+          in: query
+          required: false
+          schema: { type: integer, format: int64 }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReportPlanCompletion"
+        "401":
+          $ref: "#/components/responses/Error401"
+        "403":
+          $ref: "#/components/responses/Error403"
+        "422":
+          $ref: "#/components/responses/Error422"
+
+  /reports/activity-stats:
+    get:
+      tags: [reports]
+      summary: 活动报名统计
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: term
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReportActivityStats"
+        "401":
+          $ref: "#/components/responses/Error401"
+        "403":
+          $ref: "#/components/responses/Error403"
+        "422":
+          $ref: "#/components/responses/Error422"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    Page:
+      name: page
+      in: query
+      required: false
+      schema: { type: integer, minimum: 1, default: 1 }
+    Size:
+      name: size
+      in: query
+      required: false
+      schema: { type: integer, minimum: 1, maximum: 200, default: 20 }
+  responses:
+    Error401:
+      description: Unauthorized
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+          examples:
+            invalid:
+              value: { code: AUTH_INVALID_CREDENTIALS, message: invalid credentials }
+    Error403:
+      description: Forbidden
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+          examples:
+            forbidden:
+              value: { code: AUTH_FORBIDDEN, message: forbidden }
+    Error404:
+      description: Not Found
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+          examples:
+            notFound:
+              value: { code: NOT_FOUND, message: not found }
+    Error409:
+      description: Conflict
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+          examples:
+            conflict:
+              value: { code: CONFLICT, message: conflict }
+    Error422:
+      description: Unprocessable Entity
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+          examples:
+            validation:
+              value: { code: VALIDATION_ERROR, message: validation error }
+
+  schemas:
+    ErrorResponse:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          example: VALIDATION_ERROR
+        message:
+          type: string
+          example: field 'x' is required
+        requestId:
+          type: string
+        details:
+          type: object
+
+    UserType:
+      type: string
+      enum: [STUDENT, TEACHER]
+    RoleCode:
+      type: string
+      enum: [ADMIN_SCHOOL, ADMIN_COLLEGE, TUTOR]
+    UserStatus:
+      type: string
+      enum: [ACTIVE, DISABLED]
+
+    LoginRequest:
+      type: object
+      required: [userType, id, clientSalt, clientHash]
+      properties:
+        userType: { $ref: "#/components/schemas/UserType" }
+        id:
+          type: string
+          example: "2020123456"
+        clientSalt:
+          type: string
+          description: 前端生成的盐（字符串）
+        clientHash:
+          type: string
+          description: 前端计算的哈希（字符串）
+        deviceId:
+          type: string
+          description: 可选设备标识，用于多设备 refresh 管理
+
+    RefreshRequest:
+      type: object
+      required: [refreshToken]
+      properties:
+        refreshToken:
+          type: string
+
+    LogoutRequest:
+      type: object
+      required: [refreshToken]
+      properties:
+        refreshToken:
+          type: string
+
+    TokenPair:
+      type: object
+      required: [accessToken, refreshToken, accessExpiresAt, refreshExpiresAt]
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+        accessExpiresAt:
+          type: string
+          format: date-time
+        refreshExpiresAt:
+          type: string
+          format: date-time
+
+    College:
+      type: object
+      required: [id, name]
+      properties:
+        id: { type: integer, format: int64 }
+        name: { type: string }
+
+    User:
+      type: object
+      required: [userId, userType, id, name, status]
+      properties:
+        userId: { type: integer, format: int64, description: 内部 userId（数字主键） }
+        userType: { $ref: "#/components/schemas/UserType" }
+        id: { type: string, description: 账号 id（学号/工号，字符串） }
+        name: { type: string }
+        collegeId: { type: integer, format: int64, nullable: true }
+        status: { $ref: "#/components/schemas/UserStatus" }
+
+    UserMe:
+      allOf:
+        - $ref: "#/components/schemas/User"
+        - type: object
+          properties:
+            roles:
+              type: array
+              items: { $ref: "#/components/schemas/RoleCode" }
+
+    ImportUsersResult:
+      type: object
+      required: [created, updated, failed]
+      properties:
+        created: { type: integer, minimum: 0 }
+        updated: { type: integer, minimum: 0 }
+        failed: { type: integer, minimum: 0 }
+        failures:
+          type: array
+          items:
+            $ref: "#/components/schemas/ImportFailure"
+    ImportFailure:
+      type: object
+      required: [row, reason]
+      properties:
+        row:
+          type: integer
+          description: 从 1 开始的 CSV 行号（含表头时仍按原始行号）
+        reason:
+          type: string
+
+    UserPasswordResetRequest:
+      type: object
+      required: [clientSalt, clientHash]
+      properties:
+        clientSalt:
+          type: string
+          description: 前端生成的盐（字符串）
+        clientHash:
+          type: string
+          description: 前端计算的哈希（字符串）
+
+    ActivityStatus:
+      type: string
+      enum: [DRAFT, PUBLISHED, CLOSED]
+    SignupStatus:
+      type: string
+      enum: [APPLIED, APPROVED, REJECTED, CANCELED]
+
+    Activity:
+      type: object
+      required: [id, classId, term, title, requiresReview, status]
+      properties:
+        id: { type: integer, format: int64 }
+        classId: { type: integer, format: int64 }
+        term: { type: string, example: 2026-02-23-1 }
+        title: { type: string }
+        description: { type: string, nullable: true }
+        capacity: { type: integer, nullable: true }
+        requiresReview: { type: boolean }
+        status: { $ref: "#/components/schemas/ActivityStatus" }
+        createdByUserId: { type: integer, format: int64 }
+        createdAt: { type: string, format: date-time }
+
+    ActivityCreateRequest:
+      type: object
+      required: [classId, term, title, requiresReview]
+      properties:
+        classId: { type: integer, format: int64 }
+        term: { type: string, example: 2026-02-23-1 }
+        title: { type: string }
+        description: { type: string }
+        capacity: { type: integer, minimum: 1, nullable: true }
+        requiresReview: { type: boolean }
+        startsAt: { type: string, format: date-time, nullable: true }
+        endsAt: { type: string, format: date-time, nullable: true }
+
+    ActivitySignup:
+      type: object
+      required: [id, activityId, userId, status, createdAt]
+      properties:
+        id: { type: integer, format: int64 }
+        activityId: { type: integer, format: int64 }
+        userId: { type: integer, format: int64 }
+        status: { $ref: "#/components/schemas/SignupStatus" }
+        createdAt: { type: string, format: date-time }
+        reviewedAt: { type: string, format: date-time, nullable: true }
+        reviewedByUserId: { type: integer, format: int64, nullable: true }
+
+    PlanItemStatus:
+      type: string
+      enum: [todo, doing, done]
+    PlanOwnerType:
+      type: string
+      enum: [CLASS, USER]
+    Plan:
+      type: object
+      required: [id, ownerType, term, title, createdAt]
+      properties:
+        id: { type: integer, format: int64 }
+        ownerType: { $ref: "#/components/schemas/PlanOwnerType" }
+        ownerUserId: { type: integer, format: int64, nullable: true }
+        ownerClassId: { type: integer, format: int64, nullable: true }
+        term: { type: string }
+        title: { type: string }
+        createdAt: { type: string, format: date-time }
+    PlanCreateRequest:
+      oneOf:
+        - type: object
+          required: [ownerType, term, title]
+          properties:
+            ownerType: { type: string, enum: [USER] }
+            term: { type: string }
+            title: { type: string }
+        - type: object
+          required: [ownerType, ownerClassId, term, title]
+          properties:
+            ownerType: { type: string, enum: [CLASS] }
+            ownerClassId: { type: integer, format: int64 }
+            term: { type: string }
+            title: { type: string }
+    PlanItem:
+      type: object
+      required: [id, planId, title, status, sortOrder, createdAt]
+      properties:
+        id: { type: integer, format: int64 }
+        planId: { type: integer, format: int64 }
+        title: { type: string }
+        status: { $ref: "#/components/schemas/PlanItemStatus" }
+        sortOrder: { type: integer }
+        dueDate: { type: string, format: date, nullable: true }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    PlanItemCreateRequest:
+      type: object
+      required: [title]
+      properties:
+        title: { type: string }
+        dueDate: { type: string, format: date, nullable: true }
+    PlanItemUpdateRequest:
+      type: object
+      properties:
+        title: { type: string }
+        status: { $ref: "#/components/schemas/PlanItemStatus" }
+        sortOrder: { type: integer }
+        dueDate: { type: string, format: date, nullable: true }
+    PlanProgress:
+      type: object
+      description: 实时计算的计划完成率（以 plan_item.status 为准）
+      required: [planId, doneCount, totalCount, completionRate, calculatedAt]
+      properties:
+        planId: { type: integer, format: int64 }
+        doneCount: { type: integer }
+        totalCount: { type: integer }
+        completionRate: { type: number, format: float }
+        calculatedAt: { type: string, format: date-time }
+    PlanDetail:
+      allOf:
+        - $ref: "#/components/schemas/Plan"
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items: { $ref: "#/components/schemas/PlanItem" }
+            progress:
+              $ref: "#/components/schemas/PlanProgress"
+    PlanItemProgress:
+      type: object
+      description: 条目进度历史记录（append-only）
+      required: [id, planItemId, percent, createdByUserId, createdAt]
+      properties:
+        id: { type: integer, format: int64 }
+        planItemId: { type: integer, format: int64 }
+        percent: { type: integer, minimum: 0, maximum: 100 }
+        note: { type: string, nullable: true }
+        createdByUserId: { type: integer, format: int64 }
+        createdAt: { type: string, format: date-time }
+    PlanItemProgressCreateRequest:
+      type: object
+      required: [percent]
+      properties:
+        percent: { type: integer, minimum: 0, maximum: 100 }
+        note: { type: string, nullable: true }
+
+    Evaluation:
+      type: object
+      required: [id, evaluatorUserId, evaluateeUserId, term, scoreTotal, createdAt]
+      properties:
+        id: { type: integer, format: int64 }
+        evaluatorUserId: { type: integer, format: int64 }
+        evaluateeUserId: { type: integer, format: int64 }
+        term: { type: string }
+        scoreTotal: { type: integer }
+        comment: { type: string, nullable: true }
+        createdAt: { type: string, format: date-time }
+    EvaluationCreateRequest:
+      type: object
+      required: [evaluateeUserId, term, scoreTotal]
+      properties:
+        evaluateeUserId: { type: integer, format: int64 }
+        term: { type: string }
+        scoreTotal: { type: integer, minimum: 0 }
+        comment: { type: string }
+        details:
+          type: array
+          items:
+            $ref: "#/components/schemas/EvaluationDetailItem"
+    EvaluationDetailItem:
+      type: object
+      required: [itemKey, score]
+      properties:
+        itemKey: { type: string, example: attitude }
+        score: { type: integer }
+        comment: { type: string }
+    EvaluationDetail:
+      allOf:
+        - $ref: "#/components/schemas/Evaluation"
+        - type: object
+          required: [details]
+          properties:
+            details:
+              type: array
+              items:
+                $ref: "#/components/schemas/EvaluationDetailItem"
+
+    ReportPlanCompletion:
+      type: object
+      required: [term, items]
+      properties:
+        term: { type: string }
+        items:
+          type: array
+          items:
+            type: object
+            required: [scope, doneCount, totalCount, completionRate]
+            properties:
+              scope:
+                type: string
+                description: 统计范围描述（如“学院:xx”或“班级:xx”）
+              doneCount: { type: integer }
+              totalCount: { type: integer }
+              completionRate: { type: number, format: float }
+
+    ReportActivityStats:
+      type: object
+      required: [term, items]
+      properties:
+        term: { type: string }
+        items:
+          type: array
+          items:
+            type: object
+            required: [activityId, title, approvedCount, appliedCount]
+            properties:
+              activityId: { type: integer, format: int64 }
+              title: { type: string }
+              appliedCount: { type: integer }
+              approvedCount: { type: integer }
+
+    PageActivity:
+      type: object
+      required: [page, size, total, items]
+      properties:
+        page: { type: integer }
+        size: { type: integer }
+        total: { type: integer }
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/Activity" }
+    PageActivitySignup:
+      type: object
+      required: [page, size, total, items]
+      properties:
+        page: { type: integer }
+        size: { type: integer }
+        total: { type: integer }
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/ActivitySignup" }
+    PagePlan:
+      type: object
+      required: [page, size, total, items]
+      properties:
+        page: { type: integer }
+        size: { type: integer }
+        total: { type: integer }
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/Plan" }
+    PageEvaluation:
+      type: object
+      required: [page, size, total, items]
+      properties:
+        page: { type: integer }
+        size: { type: integer }
+        total: { type: integer }
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/Evaluation" }

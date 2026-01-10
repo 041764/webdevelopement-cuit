@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+MAVEN_PROJECTBASEDIR="$(cd "$(dirname "$0")" && pwd)"
+WRAPPER_DIR="$MAVEN_PROJECTBASEDIR/.mvn/wrapper"
+WRAPPER_JAR="$WRAPPER_DIR/maven-wrapper.jar"
+WRAPPER_PROPERTIES="$WRAPPER_DIR/maven-wrapper.properties"
+
+export MAVEN_USER_HOME="${MAVEN_USER_HOME:-$MAVEN_PROJECTBASEDIR/../.m2}"
+mkdir -p "$MAVEN_USER_HOME"
+
+if [[ ! -f "$WRAPPER_PROPERTIES" ]]; then
+  echo "ERROR: $WRAPPER_PROPERTIES not found" >&2
+  exit 1
+fi
+
+wrapperUrl="$(awk -F= '/^wrapperUrl=/{print $2}' "$WRAPPER_PROPERTIES" | tail -n 1)"
+
+if [[ -z "${wrapperUrl:-}" ]]; then
+  echo "ERROR: wrapperUrl missing in $WRAPPER_PROPERTIES" >&2
+  exit 1
+fi
+
+mkdir -p "$WRAPPER_DIR"
+
+if [[ ! -f "$WRAPPER_JAR" ]]; then
+  echo "Downloading maven-wrapper.jar..."
+  if command -v curl >/dev/null 2>&1; then
+    curl -fsS "$wrapperUrl" -o "$WRAPPER_JAR"
+  elif command -v wget >/dev/null 2>&1; then
+    wget -qO "$WRAPPER_JAR" "$wrapperUrl"
+  else
+    echo "ERROR: need curl or wget to download Maven Wrapper" >&2
+    exit 1
+  fi
+fi
+
+exec java -Dmaven.multiModuleProjectDirectory="$MAVEN_PROJECTBASEDIR" \
+  -Dmaven.user.home="$MAVEN_USER_HOME" \
+  -Dmaven.repo.local="$MAVEN_USER_HOME/repository" \
+  -classpath "$WRAPPER_JAR" \
+  org.apache.maven.wrapper.MavenWrapperMain \
+  "$@"

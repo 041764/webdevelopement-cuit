@@ -1,0 +1,11 @@
+package com.kuapt.tutor.auth;
+
+public enum AuthErrorCode {
+  AUTH_INVALID_CREDENTIALS,
+  AUTH_TOKEN_EXPIRED,
+  AUTH_TOKEN_REVOKED,
+  AUTH_FORBIDDEN,
+  VALIDATION_ERROR,
+  NOT_FOUND,
+  CONFLICT
+}
