@@ -1,0 +1,26 @@
+.app-header {
+  height: 56px;
+  display: flex;
+  align-items: center;
+  padding: 0 var(--s-5);
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--bg) 78%, transparent);
+  backdrop-filter: blur(10px);
+}
+
+.app-sider {
+  padding: var(--s-4) var(--s-3);
+  box-shadow: 14px 0 40px rgba(15, 23, 42, 0.06);
+  z-index: 2;
+}
+
+.app-content {
+  padding: var(--s-5);
+  min-height: calc(100vh - 56px);
+}
+
+@media (max-width: 959px) {
+  .app-content {
+    padding: var(--s-4);
+  }
+}

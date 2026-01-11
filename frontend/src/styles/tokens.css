@@ -1,0 +1,32 @@
+:root {
+  --bg: #f7f4ee;
+  --bg-2: #f2efe7;
+  --panel: #ffffff;
+  --panel-2: #fbfaf6;
+
+  --text: #161a1f;
+  --muted: #5e6a78;
+
+  --border: rgba(22, 26, 31, 0.12);
+  --border-strong: rgba(22, 26, 31, 0.18);
+
+  --primary: #0ea5b7;
+  --primary-hover: #12b6c8;
+  --primary-pressed: #0b8ea0;
+  --primary-soft: rgba(14, 165, 183, 0.14);
+
+  --radius-sm: 14px;
+  --radius: 18px;
+  --radius-lg: 24px;
+
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 24px;
+
+  --shadow-1: 0 16px 40px rgba(15, 23, 42, 0.08);
+  --shadow-2: 0 22px 70px rgba(15, 23, 42, 0.12);
+
+  --font-body: 'Source Sans 3', 'Noto Sans SC', 'Noto Sans', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --font-display: 'Fraunces', 'Ibarra Real Nova', 'Noto Serif SC', 'Noto Serif', Georgia, serif;
+}

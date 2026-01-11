@@ -1,0 +1,18 @@
+# Maven / Java
+**/target/
+.m2/
+
+# Local runtime data
+backend/data/
+
+# Logs
+*.log
+
+# Project progress notes
+PROJECT_PROGRESS.md
+
+# IDE / OS
+.idea/
+.vscode/
+*.iml
+.DS_Store

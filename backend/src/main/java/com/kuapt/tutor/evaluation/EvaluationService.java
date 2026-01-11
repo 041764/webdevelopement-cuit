@@ -7,9 +7,13 @@ import com.kuapt.tutor.exception.ApiException;
 import com.kuapt.tutor.mapper.ClassStudentMapper;
 import com.kuapt.tutor.mapper.EvaluationDetailMapper;
 import com.kuapt.tutor.mapper.EvaluationMapper;
-import com.kuapt.tutor.mapper.RoleMapper;
 import com.kuapt.tutor.mapper.UserMapper;
 import com.kuapt.tutor.model.EvaluationDetailItemRecord;
+import com.kuapt.tutor.service.PageSpec;
+import com.kuapt.tutor.service.Requester;
+import com.kuapt.tutor.service.ServiceAuth;
+import com.kuapt.tutor.service.TermUtil;
+import com.kuapt.tutor.service.ViewScope;
 import com.kuapt.tutor.model.EvaluationRecord;
 import com.kuapt.tutor.model.RoleCode;
 import com.kuapt.tutor.model.UserRecord;
@@ -24,26 +28,26 @@ public class EvaluationService {
   private final EvaluationMapper evaluationMapper;
   private final EvaluationDetailMapper detailMapper;
   private final UserMapper userMapper;
-  private final RoleMapper roleMapper;
   private final ClassStudentMapper classStudentMapper;
+  private final ServiceAuth serviceAuth;
 
   public EvaluationService(
       EvaluationMapper evaluationMapper,
       EvaluationDetailMapper detailMapper,
       UserMapper userMapper,
-      RoleMapper roleMapper,
-      ClassStudentMapper classStudentMapper) {
+      ClassStudentMapper classStudentMapper,
+      ServiceAuth serviceAuth) {
     this.evaluationMapper = evaluationMapper;
     this.detailMapper = detailMapper;
     this.userMapper = userMapper;
-    this.roleMapper = roleMapper;
     this.classStudentMapper = classStudentMapper;
+    this.serviceAuth = serviceAuth;
   }
 
   public PageEvaluationResponse list(Authentication authentication, int page, int size, String term) {
-    Requester requester = requireRequester(authentication);
+    Requester requester = serviceAuth.requireRequester(authentication);
     PageSpec p = PageSpec.of(page, size);
-    String normalizedTerm = normalizeOptionalTerm(term);
+    String normalizedTerm = TermUtil.normalizeOptionalTerm(term);
 
     if (requester.user().userType() == UserType.STUDENT) {
       long total = evaluationMapper.countForStudent(requester.userId(), normalizedTerm);
@@ -51,7 +55,7 @@ public class EvaluationService {
       return new PageEvaluationResponse(p.page(), p.size(), total, items);
     }
 
-    ViewScope scope = viewScopeForTeacher(requester);
+    ViewScope scope = serviceAuth.viewScopeForTeacher(requester);
     if (scope.adminSchool()) {
       long total = evaluationMapper.countAll(normalizedTerm);
       List<EvaluationRecord> items = evaluationMapper.listAll(normalizedTerm, p.size(), p.offset());
@@ -75,12 +79,12 @@ public class EvaluationService {
 
   @Transactional
   public EvaluationRecord create(Authentication authentication, EvaluationCreateRequest req) {
-    Requester requester = requireRequester(authentication);
+    Requester requester = serviceAuth.requireRequester(authentication);
     if (requester.user().userType() != UserType.TEACHER) {
       throw new ApiException(AuthErrorCode.AUTH_FORBIDDEN, "forbidden");
     }
 
-    validateTerm(req.term());
+    TermUtil.validateTerm(req.term());
     long evaluateeUserId = requirePositive(req.evaluateeUserId(), "evaluateeUserId is invalid");
 
     UserRecord student = userMapper.findById(evaluateeUserId);
@@ -113,7 +117,7 @@ public class EvaluationService {
 
   @Transactional(readOnly = true)
   public EvaluationRecord requireAccessibleEvaluation(Authentication authentication, long evaluationId) {
-    Requester requester = requireRequester(authentication);
+    Requester requester = serviceAuth.requireRequester(authentication);
     EvaluationRecord eval = evaluationMapper.findById(evaluationId);
     if (eval == null) {
       throw new ApiException(AuthErrorCode.NOT_FOUND, "evaluation not found");
@@ -143,7 +147,7 @@ public class EvaluationService {
   }
 
   private boolean canReadTeacher(Requester requester, UserRecord student) {
-    ViewScope scope = viewScopeForTeacher(requester);
+    ViewScope scope = serviceAuth.viewScopeForTeacher(requester);
     if (scope.adminSchool()) {
       return true;
     }
@@ -175,70 +179,4 @@ public class EvaluationService {
     return v;
   }
 
-  private Requester requireRequester(Authentication authentication) {
-    if (authentication == null || authentication.getPrincipal() == null) {
-      throw new ApiException(AuthErrorCode.AUTH_FORBIDDEN, "forbidden");
-    }
-    long userId = (long) authentication.getPrincipal();
-    UserRecord u = userMapper.findById(userId);
-    if (u == null) {
-      throw new ApiException(AuthErrorCode.AUTH_FORBIDDEN, "forbidden");
-    }
-    List<RoleCode> roles = roleMapper.listRoleCodes(userId);
-    return new Requester(userId, u, roles);
-  }
-
-  private static void validateTerm(String term) {
-    if (term == null || !term.matches("\\d{4}-\\d{2}-\\d{2}-[12]")) {
-      throw new ApiException(AuthErrorCode.VALIDATION_ERROR, "term is invalid");
-    }
-  }
-
-  private static String normalizeOptionalTerm(String term) {
-    if (term == null) {
-      return null;
-    }
-    String t = term.trim();
-    if (t.isEmpty()) {
-      return null;
-    }
-    validateTerm(t);
-    return t;
-  }
-
-  private ViewScope viewScopeForTeacher(Requester requester) {
-    List<RoleCode> roles = requester.roles();
-    boolean isAdminSchool = roles.contains(RoleCode.ADMIN_SCHOOL);
-    boolean isAdminCollege = roles.contains(RoleCode.ADMIN_COLLEGE);
-    boolean isTutor = roles.contains(RoleCode.TUTOR);
-    if (isAdminSchool) {
-      return new ViewScope(true, null, false, false);
-    }
-    Long collegeId = null;
-    boolean includeCollege = false;
-    if (isAdminCollege) {
-      if (requester.user().collegeId() == null) {
-        throw new ApiException(AuthErrorCode.AUTH_FORBIDDEN, "forbidden");
-      }
-      collegeId = requester.user().collegeId();
-      includeCollege = true;
-    }
-    return new ViewScope(false, collegeId, isTutor, includeCollege);
-  }
-
-  private record PageSpec(int page, int size, int offset) {
-    static PageSpec of(int page, int size) {
-      if (page < 1) {
-        throw new ApiException(AuthErrorCode.VALIDATION_ERROR, "page is invalid");
-      }
-      if (size < 1 || size > 200) {
-        throw new ApiException(AuthErrorCode.VALIDATION_ERROR, "size is invalid");
-      }
-      return new PageSpec(page, size, Math.multiplyExact(page - 1, size));
-    }
-  }
-
-  private record ViewScope(boolean adminSchool, Long collegeId, boolean includeTutor, boolean includeCollege) {}
-
-  private record Requester(long userId, UserRecord user, List<RoleCode> roles) {}
 }

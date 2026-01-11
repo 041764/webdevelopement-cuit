@@ -3,11 +3,11 @@ package com.kuapt.tutor.report;
 import com.kuapt.tutor.auth.AuthErrorCode;
 import com.kuapt.tutor.exception.ApiException;
 import com.kuapt.tutor.mapper.ReportMapper;
-import com.kuapt.tutor.mapper.RoleMapper;
-import com.kuapt.tutor.mapper.UserMapper;
-import com.kuapt.tutor.model.RoleCode;
-import com.kuapt.tutor.model.UserRecord;
 import com.kuapt.tutor.model.UserType;
+import com.kuapt.tutor.service.Requester;
+import com.kuapt.tutor.service.ServiceAuth;
+import com.kuapt.tutor.service.TermUtil;
+import com.kuapt.tutor.service.ViewScope;
 import com.kuapt.tutor.report.dto.ReportActivityStatsResponse;
 import com.kuapt.tutor.report.dto.ReportPlanCompletionResponse;
 import java.util.List;
@@ -17,24 +17,22 @@ import org.springframework.stereotype.Service;
 @Service
 public class ReportService {
   private final ReportMapper reportMapper;
-  private final UserMapper userMapper;
-  private final RoleMapper roleMapper;
+  private final ServiceAuth serviceAuth;
 
-  public ReportService(ReportMapper reportMapper, UserMapper userMapper, RoleMapper roleMapper) {
+  public ReportService(ReportMapper reportMapper, ServiceAuth serviceAuth) {
     this.reportMapper = reportMapper;
-    this.userMapper = userMapper;
-    this.roleMapper = roleMapper;
+    this.serviceAuth = serviceAuth;
   }
 
   public ReportPlanCompletionResponse planCompletion(Authentication authentication, String term, Long collegeId) {
-    Requester requester = requireRequester(authentication);
-    validateTerm(term);
+    Requester requester = serviceAuth.requireRequester(authentication);
+    TermUtil.validateTerm(term);
 
     if (requester.user().userType() != UserType.TEACHER) {
       throw new ApiException(AuthErrorCode.AUTH_FORBIDDEN, "forbidden");
     }
 
-    ViewScope scope = viewScopeForTeacher(requester);
+    ViewScope scope = serviceAuth.viewScopeForTeacher(requester);
     if (scope.adminSchool()) {
       return new ReportPlanCompletionResponse(term, mapPlan(reportMapper.planCompletionByCollege(term, collegeId)));
     }
@@ -54,14 +52,14 @@ public class ReportService {
   }
 
   public ReportActivityStatsResponse activityStats(Authentication authentication, String term) {
-    Requester requester = requireRequester(authentication);
-    validateTerm(term);
+    Requester requester = serviceAuth.requireRequester(authentication);
+    TermUtil.validateTerm(term);
 
     if (requester.user().userType() != UserType.TEACHER) {
       throw new ApiException(AuthErrorCode.AUTH_FORBIDDEN, "forbidden");
     }
 
-    ViewScope scope = viewScopeForTeacher(requester);
+    ViewScope scope = serviceAuth.viewScopeForTeacher(requester);
     if (scope.adminSchool()) {
       return new ReportActivityStatsResponse(term, mapActivity(reportMapper.activityStatsAll(term)));
     }
@@ -85,46 +83,4 @@ public class ReportService {
     return rows.stream().map(r -> new ReportActivityStatsResponse.Item(r.activityId(), r.title(), r.appliedCount(), r.approvedCount())).toList();
   }
 
-  private Requester requireRequester(Authentication authentication) {
-    if (authentication == null || authentication.getPrincipal() == null) {
-      throw new ApiException(AuthErrorCode.AUTH_FORBIDDEN, "forbidden");
-    }
-    long userId = (long) authentication.getPrincipal();
-    UserRecord u = userMapper.findById(userId);
-    if (u == null) {
-      throw new ApiException(AuthErrorCode.AUTH_FORBIDDEN, "forbidden");
-    }
-    List<RoleCode> roles = roleMapper.listRoleCodes(userId);
-    return new Requester(userId, u, roles);
-  }
-
-  private static void validateTerm(String term) {
-    if (term == null || !term.matches("\\d{4}-\\d{2}-\\d{2}-[12]")) {
-      throw new ApiException(AuthErrorCode.VALIDATION_ERROR, "term is invalid");
-    }
-  }
-
-  private ViewScope viewScopeForTeacher(Requester requester) {
-    List<RoleCode> roles = requester.roles();
-    boolean isAdminSchool = roles.contains(RoleCode.ADMIN_SCHOOL);
-    boolean isAdminCollege = roles.contains(RoleCode.ADMIN_COLLEGE);
-    boolean isTutor = roles.contains(RoleCode.TUTOR);
-    if (isAdminSchool) {
-      return new ViewScope(true, null, false, false);
-    }
-    Long collegeId = null;
-    boolean includeCollege = false;
-    if (isAdminCollege) {
-      if (requester.user().collegeId() == null) {
-        throw new ApiException(AuthErrorCode.AUTH_FORBIDDEN, "forbidden");
-      }
-      collegeId = requester.user().collegeId();
-      includeCollege = true;
-    }
-    return new ViewScope(false, collegeId, isTutor, includeCollege);
-  }
-
-  private record ViewScope(boolean adminSchool, Long collegeId, boolean includeTutor, boolean includeCollege) {}
-
-  private record Requester(long userId, UserRecord user, List<RoleCode> roles) {}
 }

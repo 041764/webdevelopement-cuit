@@ -8,9 +8,12 @@ import com.kuapt.tutor.exception.ApiException;
 import com.kuapt.tutor.mapper.ActivityMapper;
 import com.kuapt.tutor.mapper.ActivitySignupMapper;
 import com.kuapt.tutor.mapper.ClassMapper;
-import com.kuapt.tutor.mapper.RoleMapper;
-import com.kuapt.tutor.mapper.UserMapper;
 import com.kuapt.tutor.model.ActivityRecord;
+import com.kuapt.tutor.service.PageSpec;
+import com.kuapt.tutor.service.Requester;
+import com.kuapt.tutor.service.ServiceAuth;
+import com.kuapt.tutor.service.TermUtil;
+import com.kuapt.tutor.service.ViewScope;
 import com.kuapt.tutor.model.ActivitySignupRecord;
 import com.kuapt.tutor.model.ActivityStatus;
 import com.kuapt.tutor.model.ClassRecord;
@@ -19,33 +22,30 @@ import com.kuapt.tutor.model.SignupStatus;
 import com.kuapt.tutor.model.UserRecord;
 import com.kuapt.tutor.model.UserType;
 import java.util.List;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.security.core.Authentication;
 
 @Service
 public class ActivityService {
   private final ActivityMapper activityMapper;
   private final ActivitySignupMapper signupMapper;
   private final ClassMapper classMapper;
-  private final UserMapper userMapper;
-  private final RoleMapper roleMapper;
+  private final ServiceAuth serviceAuth;
 
   public ActivityService(
       ActivityMapper activityMapper,
       ActivitySignupMapper signupMapper,
       ClassMapper classMapper,
-      UserMapper userMapper,
-      RoleMapper roleMapper) {
+      ServiceAuth serviceAuth) {
     this.activityMapper = activityMapper;
     this.signupMapper = signupMapper;
     this.classMapper = classMapper;
-    this.userMapper = userMapper;
-    this.roleMapper = roleMapper;
+    this.serviceAuth = serviceAuth;
   }
 
   public PageActivity list(Authentication authentication, int page, int size, String term, ActivityStatus status) {
-    Requester requester = requireRequester(authentication);
+    Requester requester = serviceAuth.requireRequester(authentication);
     PageSpec p = PageSpec.of(page, size);
 
     if (requester.user().userType() == UserType.STUDENT) {
@@ -54,7 +54,7 @@ public class ActivityService {
       return new PageActivity(p.page(), p.size(), total, items);
     }
 
-    ViewScope scope = viewScopeForTeacher(requester);
+    ViewScope scope = serviceAuth.viewScopeForTeacher(requester);
     if (scope.adminSchool()) {
       long total = activityMapper.countAll(term, status);
       List<ActivityRecord> items = activityMapper.listAll(term, status, p.size(), p.offset());
@@ -72,10 +72,10 @@ public class ActivityService {
 
   @Transactional
   public ActivityRecord create(Authentication authentication, ActivityCreateRequest req) {
-    Requester requester = requireRequester(authentication);
-    requireTeacher(requester);
+    Requester requester = serviceAuth.requireRequester(authentication);
+    serviceAuth.requireTeacher(requester);
 
-    validateTerm(req.term());
+    TermUtil.validateTerm(req.term());
     if (req.classId() <= 0) {
       throw new ApiException(AuthErrorCode.VALIDATION_ERROR, "classId must be positive");
     }
@@ -110,7 +110,7 @@ public class ActivityService {
   }
 
   public ActivityRecord get(Authentication authentication, long activityId) {
-    Requester requester = requireRequester(authentication);
+    Requester requester = serviceAuth.requireRequester(authentication);
     ActivityRecord a = accessibleActivityOrNull(requester, activityId);
     if (a == null) {
       throw new ApiException(AuthErrorCode.NOT_FOUND, "activity not found");
@@ -120,8 +120,8 @@ public class ActivityService {
 
   @Transactional
   public void publish(Authentication authentication, long activityId) {
-    Requester requester = requireRequester(authentication);
-    requireTeacher(requester);
+    Requester requester = serviceAuth.requireRequester(authentication);
+    serviceAuth.requireTeacher(requester);
 
     ActivityRecord a = activityMapper.findById(activityId);
     if (a == null) {
@@ -142,8 +142,8 @@ public class ActivityService {
 
   @Transactional
   public ActivitySignupRecord signup(Authentication authentication, long activityId, String note) {
-    Requester requester = requireRequester(authentication);
-    requireStudent(requester);
+    Requester requester = serviceAuth.requireRequester(authentication);
+    serviceAuth.requireStudent(requester);
 
     ActivityRecord a = activityMapper.findById(activityId);
     if (a == null) {
@@ -190,8 +190,8 @@ public class ActivityService {
   }
 
   public PageActivitySignup listSignups(Authentication authentication, long activityId, int page, int size, SignupStatus status) {
-    Requester requester = requireRequester(authentication);
-    requireTeacher(requester);
+    Requester requester = serviceAuth.requireRequester(authentication);
+    serviceAuth.requireTeacher(requester);
     PageSpec p = PageSpec.of(page, size);
 
     ActivityRecord a = activityMapper.findById(activityId);
@@ -212,8 +212,8 @@ public class ActivityService {
 
   @Transactional
   public void cancelMySignup(Authentication authentication, long activityId) {
-    Requester requester = requireRequester(authentication);
-    requireStudent(requester);
+    Requester requester = serviceAuth.requireRequester(authentication);
+    serviceAuth.requireStudent(requester);
 
     ActivitySignupRecord existing = signupMapper.findByActivityIdAndUserId(activityId, requester.userId());
     if (existing == null) {
@@ -224,8 +224,8 @@ public class ActivityService {
 
   @Transactional
   public void approve(Authentication authentication, long activityId, long signupId) {
-    Requester requester = requireRequester(authentication);
-    requireTeacher(requester);
+    Requester requester = serviceAuth.requireRequester(authentication);
+    serviceAuth.requireTeacher(requester);
 
     ActivityRecord a = activityMapper.findById(activityId);
     if (a == null) {
@@ -256,8 +256,8 @@ public class ActivityService {
 
   @Transactional
   public void reject(Authentication authentication, long activityId, long signupId, String reason) {
-    Requester requester = requireRequester(authentication);
-    requireTeacher(requester);
+    Requester requester = serviceAuth.requireRequester(authentication);
+    serviceAuth.requireTeacher(requester);
 
     ActivityRecord a = activityMapper.findById(activityId);
     if (a == null) {
@@ -290,7 +290,7 @@ public class ActivityService {
       return activityMapper.findForStudentById(activityId, requester.userId());
     }
 
-    ViewScope scope = viewScopeForTeacher(requester);
+    ViewScope scope = serviceAuth.viewScopeForTeacher(requester);
     if (scope.adminSchool()) {
       return activityMapper.findById(activityId);
     }
@@ -298,26 +298,6 @@ public class ActivityService {
       return null;
     }
     return activityMapper.findForTeacherById(activityId, requester.userId(), scope.collegeId(), scope.includeTutor(), scope.includeCollege());
-  }
-
-  private ViewScope viewScopeForTeacher(Requester requester) {
-    List<RoleCode> roles = requester.roles();
-    boolean isAdminSchool = roles.contains(RoleCode.ADMIN_SCHOOL);
-    boolean isAdminCollege = roles.contains(RoleCode.ADMIN_COLLEGE);
-    boolean isTutor = roles.contains(RoleCode.TUTOR);
-    if (isAdminSchool) {
-      return new ViewScope(true, null, false, false);
-    }
-    Long collegeId = null;
-    boolean includeCollege = false;
-    if (isAdminCollege) {
-      if (requester.user().collegeId() == null) {
-        throw new ApiException(AuthErrorCode.AUTH_FORBIDDEN, "forbidden");
-      }
-      collegeId = requester.user().collegeId();
-      includeCollege = true;
-    }
-    return new ViewScope(false, collegeId, isTutor, includeCollege);
   }
 
   private void assertCanManageClass(Requester requester, ClassRecord clazz) {
@@ -351,50 +331,4 @@ public class ActivityService {
     }
   }
 
-  private Requester requireRequester(Authentication authentication) {
-    if (authentication == null || authentication.getPrincipal() == null) {
-      throw new ApiException(AuthErrorCode.AUTH_FORBIDDEN, "forbidden");
-    }
-    long userId = (long) authentication.getPrincipal();
-    UserRecord u = userMapper.findById(userId);
-    if (u == null) {
-      throw new ApiException(AuthErrorCode.AUTH_FORBIDDEN, "forbidden");
-    }
-    List<RoleCode> roles = roleMapper.listRoleCodes(userId);
-    return new Requester(userId, u, roles);
-  }
-
-  private void requireTeacher(Requester requester) {
-    if (requester.user().userType() != UserType.TEACHER) {
-      throw new ApiException(AuthErrorCode.AUTH_FORBIDDEN, "forbidden");
-    }
-  }
-
-  private void requireStudent(Requester requester) {
-    if (requester.user().userType() != UserType.STUDENT) {
-      throw new ApiException(AuthErrorCode.AUTH_FORBIDDEN, "forbidden");
-    }
-  }
-
-  private static void validateTerm(String term) {
-    if (term == null || !term.matches("\\d{4}-\\d{2}-\\d{2}-[12]")) {
-      throw new ApiException(AuthErrorCode.VALIDATION_ERROR, "term is invalid");
-    }
-  }
-
-  private record PageSpec(int page, int size, int offset) {
-    static PageSpec of(int page, int size) {
-      if (page < 1) {
-        throw new ApiException(AuthErrorCode.VALIDATION_ERROR, "page is invalid");
-      }
-      if (size < 1 || size > 200) {
-        throw new ApiException(AuthErrorCode.VALIDATION_ERROR, "size is invalid");
-      }
-      return new PageSpec(page, size, Math.multiplyExact(page - 1, size));
-    }
-  }
-
-  private record ViewScope(boolean adminSchool, Long collegeId, boolean includeTutor, boolean includeCollege) {}
-
-  private record Requester(long userId, UserRecord user, List<RoleCode> roles) {}
 }
