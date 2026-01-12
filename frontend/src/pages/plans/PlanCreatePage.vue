@@ -1,22 +1,30 @@
 <template>
-  <PageHeader title="创建计划" description="对接 POST /plans。" />
+  <PageHeader title="创建计划" description="填写计划信息并创建新计划。" />
 
   <n-card>
     <n-form :model="model" label-placement="top">
       <n-grid :cols="24" :x-gap="16" :y-gap="12">
-        <n-form-item-gi :span="12" label="ownerType">
+        <n-form-item-gi :span="12" label="所属类型">
           <n-select v-model:value="model.ownerType" :options="ownerTypeOptions" style="width: 100%" />
         </n-form-item-gi>
 
-        <n-form-item-gi :span="12" label="ownerClassId（ownerType=CLASS 时必填）">
-          <n-input-number v-model:value="model.ownerClassId" :min="1" style="width: 100%" :disabled="model.ownerType !== 'CLASS'" />
+        <n-form-item-gi :span="12" label="班级（类型为班级时必选）">
+          <n-select
+            v-model:value="model.ownerClassId"
+            :options="classOptions"
+            :loading="loadingClasses"
+            :disabled="model.ownerType !== 'CLASS'"
+            filterable
+            placeholder="请选择班级"
+            style="width: 100%"
+          />
         </n-form-item-gi>
 
-        <n-form-item-gi :span="12" label="term">
-          <n-input v-model:value="model.term" placeholder="2026-02-23-1" />
+        <n-form-item-gi :span="12" label="学期">
+          <n-input v-model:value="model.term" placeholder="例如：2026-02-23-1" />
         </n-form-item-gi>
 
-        <n-form-item-gi :span="24" label="title">
+        <n-form-item-gi :span="24" label="标题">
           <n-input v-model:value="model.title" />
         </n-form-item-gi>
       </n-grid>
@@ -32,18 +40,28 @@
 </template>
 
 <script setup lang="ts">
-import { NButton, NCard, NForm, NFormItemGi, NGrid, NInput, NInputNumber, NSelect, NSpace, useMessage } from 'naive-ui'
-import { computed, reactive, ref } from 'vue'
+import { NButton, NCard, NForm, NFormItemGi, NGrid, NInput, NSelect, NSpace, useMessage } from 'naive-ui'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import PageHeader from '@/components/PageHeader.vue'
 import { createPlan } from '@/api/plans'
 import { toApiError } from '@/api/errors'
+import { fetchClasses, type ClassOption } from '@/api/lookup'
 
 const router = useRouter()
 const message = useMessage()
 
 const submitting = ref(false)
+const loadingClasses = ref(false)
+const classes = ref<ClassOption[]>([])
+
+const classOptions = computed(() =>
+  classes.value.map((c) => ({
+    label: `${c.name} (${c.collegeName})`,
+    value: c.id,
+  }))
+)
 
 const model = reactive({
   ownerType: 'USER' as 'USER' | 'CLASS',
@@ -53,8 +71,8 @@ const model = reactive({
 })
 
 const ownerTypeOptions = [
-  { label: 'USER', value: 'USER' },
-  { label: 'CLASS', value: 'CLASS' },
+  { label: '个人', value: 'USER' },
+  { label: '班级', value: 'CLASS' },
 ]
 
 const canSubmit = computed(() => {
@@ -62,6 +80,18 @@ const canSubmit = computed(() => {
   if (model.title.trim().length === 0) return false
   if (model.ownerType === 'CLASS' && !model.ownerClassId) return false
   return true
+})
+
+onMounted(async () => {
+  loadingClasses.value = true
+  try {
+    classes.value = await fetchClasses()
+  } catch (e) {
+    const err = toApiError(e)
+    message.error(`加载班级列表失败: ${err.message}`)
+  } finally {
+    loadingClasses.value = false
+  }
 })
 
 async function onSubmit() {

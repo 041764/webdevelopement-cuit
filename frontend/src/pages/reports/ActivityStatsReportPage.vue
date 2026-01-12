@@ -1,9 +1,9 @@
 <template>
-  <PageHeader title="活动报名统计" description="对接 GET /reports/activity-stats。" />
+  <PageHeader title="活动报名统计" description="查看活动报名统计数据。" />
 
   <n-card>
     <n-space wrap :size="12" align="center">
-      <n-input v-model:value="term" placeholder="term（必填）" style="width: 220px" />
+      <n-input v-model:value="term" placeholder="学期（必填）" style="width: 220px" />
       <n-button type="primary" :loading="loading" :disabled="term.trim().length === 0" @click="fetchReport">查询</n-button>
     </n-space>
   </n-card>
@@ -36,10 +36,10 @@ const data = ref<ReportActivityStats | null>(null)
 const term = ref('')
 
 const columns: DataTableColumns<{ activityId: number; title: string; appliedCount: number; approvedCount: number }> = [
-  { title: 'activityId', key: 'activityId', width: 120 },
-  { title: 'title', key: 'title' },
-  { title: 'appliedCount', key: 'appliedCount', width: 140 },
-  { title: 'approvedCount', key: 'approvedCount', width: 140 },
+  { title: '活动ID', key: 'activityId', width: 120 },
+  { title: '标题', key: 'title' },
+  { title: '报名数', key: 'appliedCount', width: 140 },
+  { title: '通过数', key: 'approvedCount', width: 140 },
 ]
 
 async function fetchReport() {

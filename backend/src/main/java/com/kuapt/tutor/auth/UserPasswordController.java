@@ -1,5 +1,6 @@
 package com.kuapt.tutor.auth;
 
+import com.kuapt.tutor.auth.dto.PasswordResetByNoRequest;
 import com.kuapt.tutor.auth.dto.PasswordResetRequest;
 import com.kuapt.tutor.exception.ApiException;
 import com.kuapt.tutor.mapper.RoleMapper;
@@ -30,11 +31,30 @@ public class UserPasswordController {
     this.roleMapper = roleMapper;
   }
 
+  @PostMapping("/password:reset-by-no")
+  public ResponseEntity<Void> resetPasswordByNo(
+      Authentication authentication,
+      @Valid @RequestBody PasswordResetByNoRequest req) {
+    UserRecord target = userMapper.findByTypeAndNo(req.userType(), req.userNo());
+    if (target == null) {
+      throw new ApiException(AuthErrorCode.NOT_FOUND, "user not found");
+    }
+    return doResetPassword(authentication, target, req.clientSalt(), req.clientHash());
+  }
+
   @PostMapping("/{userId}/password:reset")
   public ResponseEntity<Void> resetPassword(
       Authentication authentication,
       @PathVariable("userId") long userId,
       @Valid @RequestBody PasswordResetRequest req) {
+    UserRecord target = userMapper.findById(userId);
+    if (target == null) {
+      throw new ApiException(AuthErrorCode.NOT_FOUND, "user not found");
+    }
+    return doResetPassword(authentication, target, req.clientSalt(), req.clientHash());
+  }
+
+  private ResponseEntity<Void> doResetPassword(Authentication authentication, UserRecord target, String clientSalt, String clientHash) {
     if (authentication == null || authentication.getPrincipal() == null) {
       throw new ApiException(AuthErrorCode.AUTH_FORBIDDEN, "forbidden");
     }
@@ -43,11 +63,6 @@ public class UserPasswordController {
     UserRecord requester = userMapper.findById(requesterUserId);
     if (requester == null) {
       throw new ApiException(AuthErrorCode.AUTH_FORBIDDEN, "forbidden");
-    }
-
-    UserRecord target = userMapper.findById(userId);
-    if (target == null) {
-      throw new ApiException(AuthErrorCode.NOT_FOUND, "user not found");
     }
 
     List<RoleCode> requesterRoles = roleMapper.listRoleCodes(requesterUserId);
@@ -72,7 +87,7 @@ public class UserPasswordController {
       }
     }
 
-    authService.resetPassword(userId, req.clientSalt(), req.clientHash());
+    authService.resetPassword(target.userId(), clientSalt, clientHash);
     return ResponseEntity.noContent().build();
   }
 

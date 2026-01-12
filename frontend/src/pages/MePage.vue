@@ -1,16 +1,16 @@
 <template>
-  <PageHeader title="我的信息" description="对接 GET /auth/me。" />
+  <PageHeader title="我的信息" description="查看当前登录用户的基本信息。" />
 
   <n-card>
     <AsyncState :loading="loading" :error="error" :empty="!me" @retry="fetchMe">
       <n-descriptions :column="2" bordered>
-        <n-descriptions-item label="userId">{{ me?.userId }}</n-descriptions-item>
-        <n-descriptions-item label="userType">{{ me?.userType }}</n-descriptions-item>
-        <n-descriptions-item label="id">{{ me?.id }}</n-descriptions-item>
-        <n-descriptions-item label="name">{{ me?.name }}</n-descriptions-item>
-        <n-descriptions-item label="status">{{ me?.status }}</n-descriptions-item>
-        <n-descriptions-item label="collegeId">{{ me?.collegeId ?? '-' }}</n-descriptions-item>
-        <n-descriptions-item label="roles" :span="2">{{ rolesText }}</n-descriptions-item>
+        <n-descriptions-item label="用户ID">{{ me?.userId }}</n-descriptions-item>
+        <n-descriptions-item label="用户类型">{{ me?.userType }}</n-descriptions-item>
+        <n-descriptions-item label="学号/工号">{{ me?.id }}</n-descriptions-item>
+        <n-descriptions-item label="姓名">{{ me?.name }}</n-descriptions-item>
+        <n-descriptions-item label="状态">{{ me?.status }}</n-descriptions-item>
+        <n-descriptions-item label="学院">{{ me?.collegeName ?? '-' }}</n-descriptions-item>
+        <n-descriptions-item label="角色" :span="2">{{ rolesText }}</n-descriptions-item>
       </n-descriptions>
     </AsyncState>
   </n-card>

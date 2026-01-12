@@ -25,3 +25,10 @@ export async function resetUserPassword(
   const api = getApiClient()
   await api.post(`users/${userId}/password:reset`, body)
 }
+
+export async function resetUserPasswordByNo(
+  body: { userType: UserType; userNo: string; clientSalt: string; clientHash: string },
+): Promise<void> {
+  const api = getApiClient()
+  await api.post('users/password:reset-by-no', body)
+}

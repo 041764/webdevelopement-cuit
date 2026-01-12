@@ -1,5 +1,5 @@
 <template>
-  <PageHeader title="报名列表" description="对接 GET /activities/{id}/signups 与审核接口。" />
+  <PageHeader title="报名列表" description="查看和审核活动报名。" />
 
   <n-card>
     <n-space wrap :size="12" align="center">
@@ -45,10 +45,10 @@ const page = ref(1)
 const size = ref(20)
 
 const statusOptions = [
-  { label: 'APPLIED', value: 'APPLIED' },
-  { label: 'APPROVED', value: 'APPROVED' },
-  { label: 'REJECTED', value: 'REJECTED' },
-  { label: 'CANCELED', value: 'CANCELED' },
+  { label: '已申请', value: 'APPLIED' },
+  { label: '已通过', value: 'APPROVED' },
+  { label: '已拒绝', value: 'REJECTED' },
+  { label: '已取消', value: 'CANCELED' },
 ]
 
 function readActivityId(): number {
@@ -59,9 +59,10 @@ function readActivityId(): number {
 
 const columns: DataTableColumns<ActivitySignup> = [
   { title: 'ID', key: 'id', width: 80 },
-  { title: 'userId', key: 'userId', width: 120 },
-  { title: 'status', key: 'status', width: 140 },
-  { title: 'createdAt', key: 'createdAt' },
+  { title: '学号', key: 'userNo', width: 120 },
+  { title: '姓名', key: 'userName', width: 120 },
+  { title: '状态', key: 'status', width: 140 },
+  { title: '创建时间', key: 'createdAt' },
   {
     title: '操作',
     key: 'actions',
@@ -134,7 +135,7 @@ async function onReject(signupId: number) {
         h('div', '确认拒绝该报名？'),
         h(NInput, {
           value: reason.value,
-          placeholder: '原因（可选）',
+          placeholder: '拒绝原因（可选）',
           clearable: true,
           onUpdateValue: (v) => {
             reason.value = v

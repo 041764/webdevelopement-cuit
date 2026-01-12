@@ -4,6 +4,8 @@ public record ActivitySignupRecord(
     long id,
     long activityId,
     long userId,
+    String userNo,
+    String userName,
     SignupStatus status,
     String createdAt,
     String reviewedAt,

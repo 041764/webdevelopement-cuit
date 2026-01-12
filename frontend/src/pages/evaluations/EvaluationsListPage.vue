@@ -1,5 +1,5 @@
 <template>
-  <PageHeader title="评价" description="对接 /evaluations 列表与筛选。">
+  <PageHeader title="评价" description="浏览和管理所有评价。">
     <template #actions>
       <n-button type="primary" @click="goCreate">创建评价</n-button>
     </template>
@@ -7,7 +7,7 @@
 
   <n-card>
     <n-space wrap :size="12" align="center">
-      <n-input v-model:value="term" placeholder="term（可选）" clearable style="width: 220px" />
+      <n-input v-model:value="term" placeholder="学期（可选）" clearable style="width: 220px" />
       <n-button secondary @click="fetchList">查询</n-button>
     </n-space>
   </n-card>
@@ -49,10 +49,11 @@ const size = ref(20)
 
 const columns: DataTableColumns<Evaluation> = [
   { title: 'ID', key: 'id', width: 80 },
-  { title: 'term', key: 'term', width: 160 },
-  { title: 'evaluateeUserId', key: 'evaluateeUserId', width: 150 },
-  { title: 'scoreTotal', key: 'scoreTotal', width: 120 },
-  { title: 'createdAt', key: 'createdAt' },
+  { title: '学期', key: 'term', width: 160 },
+  { title: '被评价人学号', key: 'evaluateeUserNo', width: 130 },
+  { title: '被评价人姓名', key: 'evaluateeUserName', width: 130 },
+  { title: '总分', key: 'scoreTotal', width: 100 },
+  { title: '创建时间', key: 'createdAt' },
   {
     title: '操作',
     key: 'actions',

@@ -13,13 +13,13 @@ import org.apache.ibatis.annotations.Update;
 @Mapper
 public interface ActivitySignupMapper {
   @Select(
-      "SELECT id, activity_id AS activityId, user_id AS userId, status, created_at AS createdAt, reviewed_at AS reviewedAt, reviewed_by_user_id AS reviewedByUserId "
-          + "FROM activity_signup WHERE activity_id = #{activityId} AND user_id = #{userId} LIMIT 1")
+      "SELECT s.id, s.activity_id AS activityId, s.user_id AS userId, u.user_no AS userNo, u.name AS userName, s.status, s.created_at AS createdAt, s.reviewed_at AS reviewedAt, s.reviewed_by_user_id AS reviewedByUserId "
+          + "FROM activity_signup s JOIN \"user\" u ON u.id = s.user_id WHERE s.activity_id = #{activityId} AND s.user_id = #{userId} LIMIT 1")
   ActivitySignupRecord findByActivityIdAndUserId(@Param("activityId") long activityId, @Param("userId") long userId);
 
   @Select(
-      "SELECT id, activity_id AS activityId, user_id AS userId, status, created_at AS createdAt, reviewed_at AS reviewedAt, reviewed_by_user_id AS reviewedByUserId "
-          + "FROM activity_signup WHERE id = #{signupId} AND activity_id = #{activityId} LIMIT 1")
+      "SELECT s.id, s.activity_id AS activityId, s.user_id AS userId, u.user_no AS userNo, u.name AS userName, s.status, s.created_at AS createdAt, s.reviewed_at AS reviewedAt, s.reviewed_by_user_id AS reviewedByUserId "
+          + "FROM activity_signup s JOIN \"user\" u ON u.id = s.user_id WHERE s.id = #{signupId} AND s.activity_id = #{activityId} LIMIT 1")
   ActivitySignupRecord findByIdAndActivityId(@Param("signupId") long signupId, @Param("activityId") long activityId);
 
   @Select(
@@ -32,11 +32,11 @@ public interface ActivitySignupMapper {
 
   @Select(
       "<script>"
-          + "SELECT id, activity_id AS activityId, user_id AS userId, status, created_at AS createdAt, reviewed_at AS reviewedAt, reviewed_by_user_id AS reviewedByUserId "
-          + "FROM activity_signup "
-          + "WHERE activity_id = #{activityId} "
-          + "<if test='status != null'> AND status = #{status} </if>"
-          + "ORDER BY created_at DESC, id DESC "
+          + "SELECT s.id, s.activity_id AS activityId, s.user_id AS userId, u.user_no AS userNo, u.name AS userName, s.status, s.created_at AS createdAt, s.reviewed_at AS reviewedAt, s.reviewed_by_user_id AS reviewedByUserId "
+          + "FROM activity_signup s JOIN \"user\" u ON u.id = s.user_id "
+          + "WHERE s.activity_id = #{activityId} "
+          + "<if test='status != null'> AND s.status = #{status} </if>"
+          + "ORDER BY s.created_at DESC, s.id DESC "
           + "LIMIT #{limit} OFFSET #{offset}"
           + "</script>")
   List<ActivitySignupRecord> listByActivity(

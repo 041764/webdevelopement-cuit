@@ -1,19 +1,26 @@
 <template>
-  <PageHeader title="创建评价" description="对接 POST /evaluations。" />
+  <PageHeader title="创建评价" description="填写评价信息并创建新评价。" />
 
   <n-card>
     <n-form :model="model" label-placement="top">
       <n-grid :cols="24" :x-gap="16" :y-gap="12">
-        <n-form-item-gi :span="12" label="evaluateeUserId">
-          <n-input-number v-model:value="model.evaluateeUserId" :min="1" style="width: 100%" />
+        <n-form-item-gi :span="12" label="被评价人（学生）">
+          <n-select
+            v-model:value="model.evaluateeUserId"
+            :options="studentOptions"
+            :loading="loadingStudents"
+            filterable
+            placeholder="请选择学生"
+            style="width: 100%"
+          />
         </n-form-item-gi>
-        <n-form-item-gi :span="12" label="term">
-          <n-input v-model:value="model.term" placeholder="2026-02-23-1" />
+        <n-form-item-gi :span="12" label="学期">
+          <n-input v-model:value="model.term" placeholder="例如：2026-02-23-1" />
         </n-form-item-gi>
-        <n-form-item-gi :span="12" label="scoreTotal">
+        <n-form-item-gi :span="12" label="总分">
           <n-input-number v-model:value="model.scoreTotal" :min="0" style="width: 100%" />
         </n-form-item-gi>
-        <n-form-item-gi :span="24" label="comment（可选）">
+        <n-form-item-gi :span="24" label="评语（可选）">
           <n-input v-model:value="model.comment" type="textarea" :autosize="{ minRows: 2, maxRows: 6 }" />
         </n-form-item-gi>
       </n-grid>
@@ -31,13 +38,13 @@
         <n-grid v-else :cols="24" :x-gap="16" :y-gap="12">
           <template v-for="(d, idx) in details" :key="idx">
             <n-grid-item :span="6">
-              <n-input v-model:value="d.itemKey" placeholder="itemKey" />
+              <n-input v-model:value="d.itemKey" placeholder="评价项" />
             </n-grid-item>
             <n-grid-item :span="6">
               <n-input-number v-model:value="d.score" :min="0" style="width: 100%" />
             </n-grid-item>
             <n-grid-item :span="10">
-              <n-input v-model:value="d.comment" placeholder="comment（可选）" />
+              <n-input v-model:value="d.comment" placeholder="评语（可选）" />
             </n-grid-item>
             <n-grid-item :span="2" style="display: flex; align-items: center; justify-content: flex-end;">
               <n-button size="small" tertiary @click="removeDetail(idx)">删</n-button>
@@ -66,23 +73,34 @@ import {
   NGridItem,
   NInput,
   NInputNumber,
+  NSelect,
   NSpace,
   useMessage,
 } from 'naive-ui'
-import { computed, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import PageHeader from '@/components/PageHeader.vue'
 import { toApiError } from '@/api/errors'
 import { createEvaluation } from '@/api/evaluations'
+import { fetchStudents, type StudentOption } from '@/api/lookup'
 
 const router = useRouter()
 const message = useMessage()
 
 const submitting = ref(false)
+const loadingStudents = ref(false)
+const students = ref<StudentOption[]>([])
+
+const studentOptions = computed(() =>
+  students.value.map((s) => ({
+    label: `${s.userNo} - ${s.name}`,
+    value: s.id,
+  }))
+)
 
 const model = reactive({
-  evaluateeUserId: 1 as number,
+  evaluateeUserId: null as number | null,
   term: '',
   scoreTotal: 0 as number,
   comment: '' as string,
@@ -91,7 +109,19 @@ const model = reactive({
 type DetailDraft = { itemKey: string; score: number | null; comment: string }
 const details = ref<DetailDraft[]>([])
 
-const canSubmit = computed(() => model.evaluateeUserId > 0 && model.term.trim().length > 0)
+const canSubmit = computed(() => model.evaluateeUserId !== null && model.evaluateeUserId > 0 && model.term.trim().length > 0)
+
+onMounted(async () => {
+  loadingStudents.value = true
+  try {
+    students.value = await fetchStudents()
+  } catch (e) {
+    const err = toApiError(e)
+    message.error(`加载学生列表失败: ${err.message}`)
+  } finally {
+    loadingStudents.value = false
+  }
+})
 
 function addDetail() {
   details.value.push({ itemKey: '', score: 0, comment: '' })
@@ -107,7 +137,7 @@ async function onSubmit() {
   submitting.value = true
   try {
     const body = {
-      evaluateeUserId: model.evaluateeUserId,
+      evaluateeUserId: model.evaluateeUserId as number,
       term: model.term.trim(),
       scoreTotal: model.scoreTotal,
       comment: model.comment.trim().length > 0 ? model.comment.trim() : undefined,

@@ -5,7 +5,7 @@
       <div class="side-nav__name">班导师</div>
     </div>
 
-    <n-menu class="side-nav__menu" :options="options" :value="selectedKey" @update:value="onSelect" />
+    <n-menu class="side-nav__menu" :options="menuOptions" :value="selectedKey" @update:value="onSelect" />
   </div>
 </template>
 
@@ -15,29 +15,43 @@ import type { MenuOption } from 'naive-ui'
 import { NMenu } from 'naive-ui'
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useMeStore } from '@/stores/me'
 
 const emit = defineEmits<{ navigate: [] }>()
 
 const router = useRouter()
 const route = useRoute()
+const meStore = useMeStore()
 
-const options: MenuOption[] = [
-  { label: '首页', key: 'dashboard', to: { name: 'dashboard' } },
-  { label: '我的信息', key: 'me', to: { name: 'me' } },
+const isTeacher = computed(() => meStore.me?.userType === 'TEACHER')
+const roles = computed(() => meStore.me?.roles ?? [])
+const hasAdminOrTutorRole = computed(() => 
+  roles.value.includes('ADMIN_SCHOOL') || 
+  roles.value.includes('ADMIN_COLLEGE') || 
+  roles.value.includes('TUTOR')
+)
 
-  { label: '活动', key: 'activities', to: { name: 'activities' } },
-  { label: '计划', key: 'plans', to: { name: 'plans' } },
-  { label: '评价', key: 'evaluations', to: { name: 'evaluations' } },
+const menuOptions = computed<MenuOption[]>(() => {
+  const baseOptions: MenuOption[] = [
+    { label: '首页', key: 'dashboard', to: { name: 'dashboard' } },
+    { label: '我的信息', key: 'me', to: { name: 'me' } },
+    { label: '活动', key: 'activities', to: { name: 'activities' } },
+    { label: '计划', key: 'plans', to: { name: 'plans' } },
+  ]
 
-  { label: '报表 / 计划完成率', key: 'report-plan-completion', to: { name: 'report-plan-completion' } },
-  { label: '报表 / 活动统计', key: 'report-activity-stats', to: { name: 'report-activity-stats' } },
+  // 仅有角色的教师可见的菜单（ADMIN_SCHOOL/ADMIN_COLLEGE/TUTOR）
+  if (isTeacher.value && hasAdminOrTutorRole.value) {
+    baseOptions.push(
+      { label: '评价', key: 'evaluations', to: { name: 'evaluations' } },
+      { label: '报表 / 计划完成率', key: 'report-plan-completion', to: { name: 'report-plan-completion' } },
+      { label: '报表 / 活动统计', key: 'report-activity-stats', to: { name: 'report-activity-stats' } },
+      { label: '管理 / 用户导入', key: 'users-import', to: { name: 'users-import' } },
+      { label: '管理 / 重置密码', key: 'password-reset', to: { name: 'password-reset' } },
+    )
+  }
 
-  { label: '管理 / 用户导入', key: 'users-import', to: { name: 'users-import' } },
-  { label: '管理 / 重置密码', key: 'password-reset', to: { name: 'password-reset' } },
-
-  { label: '开发 / 健康检查', key: 'dev-health', to: { name: 'dev-health' } },
-  { label: '开发 / OpenAPI', key: 'dev-openapi', to: { name: 'dev-openapi' } },
-]
+  return baseOptions
+})
 
 const selectedKey = computed(() => {
   if (route.name && typeof route.name === 'string') return route.name

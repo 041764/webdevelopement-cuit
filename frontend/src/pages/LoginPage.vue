@@ -19,18 +19,13 @@
         <n-button type="primary" block @click="onSubmit" :disabled="!canSubmit" :loading="loading">
           进入系统
         </n-button>
-
-        <n-space justify="space-between" style="margin-top: var(--s-3);">
-          <n-button text @click="goDevHealth">后端健康检查</n-button>
-          <n-button text @click="goDevOpenApi">OpenAPI</n-button>
-        </n-space>
       </n-form>
     </div>
   </n-card>
 </template>
 
 <script setup lang="ts">
-import { NButton, NCard, NForm, NFormItem, NInput, NRadioButton, NRadioGroup, NSpace, useMessage } from 'naive-ui'
+import { NButton, NCard, NForm, NFormItem, NInput, NRadioButton, NRadioGroup, useMessage } from 'naive-ui'
 import { computed, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
@@ -83,14 +78,6 @@ async function onSubmit() {
   } finally {
     loading.value = false
   }
-}
-
-async function goDevHealth() {
-  await router.push({ name: 'dev-health' })
-}
-
-async function goDevOpenApi() {
-  await router.push({ name: 'dev-openapi' })
 }
 </script>
 

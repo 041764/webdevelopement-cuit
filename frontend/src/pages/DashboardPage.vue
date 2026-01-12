@@ -8,7 +8,7 @@
   <n-grid :cols="24" :x-gap="16" :y-gap="16">
     <n-grid-item :span="24">
       <n-card>
-        <div>从这里开始：后续会接入活动/计划/评价/报表等模块。</div>
+        <div>欢迎使用班导师管理系统，请从左侧菜单选择功能模块。</div>
       </n-card>
     </n-grid-item>
   </n-grid>

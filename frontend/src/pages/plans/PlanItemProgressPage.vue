@@ -1,10 +1,10 @@
 <template>
-  <PageHeader title="条目进度" description="对接 /plan-items/{itemId}/progress。" />
+  <PageHeader title="条目进度" description="查看和追加条目进度记录。" />
 
   <n-card>
     <n-space wrap :size="12" align="center">
       <n-input-number v-model:value="percent" :min="0" :max="100" style="width: 180px" />
-      <n-input v-model:value="note" placeholder="note（可选）" style="width: 320px" clearable />
+      <n-input v-model:value="note" placeholder="备注（可选）" style="width: 320px" clearable />
       <n-button type="primary" :loading="adding" @click="onAdd">追加</n-button>
       <n-button secondary @click="fetchList">刷新</n-button>
     </n-space>
@@ -43,10 +43,10 @@ const percent = ref<number | null>(0)
 const note = ref('')
 
 const columns: DataTableColumns<PlanItemProgress> = [
-  { title: 'id', key: 'id', width: 80 },
-  { title: 'percent', key: 'percent', width: 100 },
-  { title: 'note', key: 'note' },
-  { title: 'createdAt', key: 'createdAt' },
+  { title: 'ID', key: 'id', width: 80 },
+  { title: '进度(%)', key: 'percent', width: 100 },
+  { title: '备注', key: 'note' },
+  { title: '创建时间', key: 'createdAt' },
 ]
 
 function readItemId(): number {

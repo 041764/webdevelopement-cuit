@@ -1,16 +1,16 @@
 <template>
-  <PageHeader title="评价详情" description="对接 GET /evaluations/{id}。" />
+  <PageHeader title="评价详情" description="查看评价详细信息。" />
 
   <n-card>
     <AsyncState :loading="loading" :error="error" :empty="!evaluation" @retry="fetchDetail">
       <n-descriptions :column="2" bordered>
-        <n-descriptions-item label="id">{{ evaluation?.id }}</n-descriptions-item>
-        <n-descriptions-item label="term">{{ evaluation?.term }}</n-descriptions-item>
-        <n-descriptions-item label="evaluatorUserId">{{ evaluation?.evaluatorUserId }}</n-descriptions-item>
-        <n-descriptions-item label="evaluateeUserId">{{ evaluation?.evaluateeUserId }}</n-descriptions-item>
-        <n-descriptions-item label="scoreTotal">{{ evaluation?.scoreTotal }}</n-descriptions-item>
-        <n-descriptions-item label="createdAt">{{ evaluation?.createdAt }}</n-descriptions-item>
-        <n-descriptions-item label="comment" :span="2">{{ evaluation?.comment || '-' }}</n-descriptions-item>
+        <n-descriptions-item label="ID">{{ evaluation?.id }}</n-descriptions-item>
+        <n-descriptions-item label="学期">{{ evaluation?.term }}</n-descriptions-item>
+        <n-descriptions-item label="评价人">{{ evaluation?.evaluatorUserName || evaluation?.evaluatorUserNo || evaluation?.evaluatorUserId }}</n-descriptions-item>
+        <n-descriptions-item label="被评价人">{{ evaluation?.evaluateeUserName || evaluation?.evaluateeUserNo || evaluation?.evaluateeUserId }}</n-descriptions-item>
+        <n-descriptions-item label="总分">{{ evaluation?.scoreTotal }}</n-descriptions-item>
+        <n-descriptions-item label="创建时间">{{ evaluation?.createdAt }}</n-descriptions-item>
+        <n-descriptions-item label="评语" :span="2">{{ evaluation?.comment || '-' }}</n-descriptions-item>
       </n-descriptions>
 
       <div style="margin-top: var(--s-4)">
@@ -41,9 +41,9 @@ const error = ref<unknown>(null)
 const evaluation = ref<EvaluationDetail | null>(null)
 
 const columns: DataTableColumns<EvaluationDetailItem> = [
-  { title: 'itemKey', key: 'itemKey', width: 180 },
-  { title: 'score', key: 'score', width: 120 },
-  { title: 'comment', key: 'comment' },
+  { title: '评价项', key: 'itemKey', width: 180 },
+  { title: '分数', key: 'score', width: 120 },
+  { title: '评语', key: 'comment' },
 ]
 
 function readId(): number {

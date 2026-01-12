@@ -1,6 +1,7 @@
 spring:
   flyway:
     clean-disabled: true
+    baseline-on-migrate: true
 
 logging:
   level:

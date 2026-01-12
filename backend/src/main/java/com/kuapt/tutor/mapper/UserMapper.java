@@ -2,6 +2,8 @@ package com.kuapt.tutor.mapper;
 
 import com.kuapt.tutor.model.UserRecord;
 import com.kuapt.tutor.model.UserType;
+import com.kuapt.tutor.service.LookupService;
+import java.util.List;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -37,4 +39,14 @@ public interface UserMapper {
       @Param("userNo") String userNo,
       @Param("name") String name,
       @Param("collegeId") Long collegeId);
+
+  @Select(
+      "<script>"
+          + "SELECT id, user_no AS userNo, name "
+          + "FROM \"user\" "
+          + "WHERE user_type = 'STUDENT' AND status = 'ACTIVE' "
+          + "<if test='collegeId != null'> AND college_id = #{collegeId} </if>"
+          + "ORDER BY user_no ASC"
+          + "</script>")
+  List<LookupService.StudentOption> listStudents(@Param("collegeId") Long collegeId);
 }

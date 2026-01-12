@@ -58,6 +58,12 @@ require_cmd htpasswd
 
 mkdir -p "$(dirname "$DB_PATH")"
 
+# 清空数据库，恢复无数据状态
+if [[ -f "$DB_PATH" ]]; then
+  echo "Removing existing database: $DB_PATH"
+  rm -f "$DB_PATH"
+fi
+
 echo "DB_PATH=$DB_PATH"
 echo "DEMO_TERM=$DEMO_TERM"
 echo "COLLEGE_NAME=$COLLEGE_NAME"
@@ -84,18 +90,23 @@ role_admin_college_id="$(sql_scalar "SELECT id FROM role WHERE code='ADMIN_COLLE
 role_tutor_id="$(sql_scalar "SELECT id FROM role WHERE code='TUTOR' LIMIT 1;")"
 
 echo "[3/5] Create users"
-sql_exec "INSERT OR IGNORE INTO \"user\"(user_type, user_no, name, college_id, status) VALUES('TEACHER','4001','Admin School',NULL,'ACTIVE');"
-sql_exec "INSERT OR IGNORE INTO \"user\"(user_type, user_no, name, college_id, status) VALUES('TEACHER','1100','Admin College',${college_id},'ACTIVE');"
-sql_exec "INSERT OR IGNORE INTO \"user\"(user_type, user_no, name, college_id, status) VALUES('TEACHER','1001','Tutor A',${college_id},'ACTIVE');"
+sql_exec "INSERT OR IGNORE INTO \"user\"(user_type, user_no, name, college_id, status) VALUES('TEACHER','4001','校级管理员',NULL,'ACTIVE');"
+sql_exec "INSERT OR IGNORE INTO \"user\"(user_type, user_no, name, college_id, status) VALUES('TEACHER','1100','院级管理员',${college_id},'ACTIVE');"
+sql_exec "INSERT OR IGNORE INTO \"user\"(user_type, user_no, name, college_id, status) VALUES('TEACHER','1001','张老师',${college_id},'ACTIVE');"
 
-for no in 2001 2002 2003 2004 2005 2006 2007 2008 2009 2010; do
-  sql_exec "INSERT OR IGNORE INTO \"user\"(user_type, user_no, name, college_id, status) VALUES('STUDENT','${no}','Student ${no#20}',${college_id},'ACTIVE');"
+# 学生名单
+declare -a student_names=("王小明" "李晓华" "张伟" "刘芳" "陈静" "杨洋" "赵磊" "周婷" "吴强" "郑丽")
+student_idx=0
+for no in 2023121001 2023121002 2023121003 2023121004 2023121005 2023121006 2023121007 2023121008 2023121009 2023121010; do
+  name="${student_names[$student_idx]}"
+  sql_exec "INSERT OR IGNORE INTO \"user\"(user_type, user_no, name, college_id, status) VALUES('STUDENT','${no}','${name}',${college_id},'ACTIVE');"
+  student_idx=$((student_idx + 1))
 done
 
 admin_school_user_id="$(sql_scalar "SELECT id FROM \"user\" WHERE user_type='TEACHER' AND user_no='4001' LIMIT 1;")"
 admin_college_user_id="$(sql_scalar "SELECT id FROM \"user\" WHERE user_type='TEACHER' AND user_no='1100' LIMIT 1;")"
 tutor_user_id="$(sql_scalar "SELECT id FROM \"user\" WHERE user_type='TEACHER' AND user_no='1001' LIMIT 1;")"
-student1_user_id="$(sql_scalar "SELECT id FROM \"user\" WHERE user_type='STUDENT' AND user_no='2001' LIMIT 1;")"
+student1_user_id="$(sql_scalar "SELECT id FROM \"user\" WHERE user_type='STUDENT' AND user_no='2023121001' LIMIT 1;")"
 
 echo "[4/5] Assign roles + credentials"
 sql_exec "INSERT OR IGNORE INTO user_role(user_id, role_id) VALUES(${admin_school_user_id}, ${role_admin_school_id});"
@@ -106,7 +117,7 @@ upsert_credential "$admin_school_user_id" "TEACHER" "4001" "Admin@123"
 upsert_credential "$admin_college_user_id" "TEACHER" "1100" "AdminC@123"
 upsert_credential "$tutor_user_id" "TEACHER" "1001" "Teacher@123"
 
-for no in 2001 2002 2003 2004 2005 2006 2007 2008 2009 2010; do
+for no in 2023121001 2023121002 2023121003 2023121004 2023121005 2023121006 2023121007 2023121008 2023121009 2023121010; do
   uid="$(sql_scalar "SELECT id FROM \"user\" WHERE user_type='STUDENT' AND user_no='${no}' LIMIT 1;")"
   upsert_credential "$uid" "STUDENT" "$no" "Student@123"
 done
@@ -119,7 +130,7 @@ if [[ -z "${class_id:-}" ]]; then
 fi
 
 sql_exec "INSERT OR IGNORE INTO class_tutor(class_id, tutor_user_id, assigned_at) VALUES(${class_id}, ${tutor_user_id}, CURRENT_TIMESTAMP);"
-for no in 2001 2002 2003 2004 2005 2006 2007 2008 2009 2010; do
+for no in 2023121001 2023121002 2023121003 2023121004 2023121005 2023121006 2023121007 2023121008 2023121009 2023121010; do
   uid="$(sql_scalar "SELECT id FROM \"user\" WHERE user_type='STUDENT' AND user_no='${no}' LIMIT 1;")"
   sql_exec "INSERT OR IGNORE INTO class_student(class_id, student_user_id, joined_at) VALUES(${class_id}, ${uid}, CURRENT_TIMESTAMP);"
 done
@@ -133,10 +144,10 @@ sql_exec "INSERT INTO activity(class_id, term, title, description, capacity, req
 
 sql_exec "INSERT OR IGNORE INTO activity_signup(activity_id, user_id, status, note, created_at, reviewed_at, reviewed_by_user_id)
           VALUES(${published_activity_id}, ${student1_user_id}, 'APPLIED', '我想参加', CURRENT_TIMESTAMP, NULL, NULL);"
-student2_user_id="$(sql_scalar "SELECT id FROM \"user\" WHERE user_type='STUDENT' AND user_no='2002' LIMIT 1;")"
+student2_user_id="$(sql_scalar "SELECT id FROM \"user\" WHERE user_type='STUDENT' AND user_no='2023121002' LIMIT 1;")"
 sql_exec "INSERT OR IGNORE INTO activity_signup(activity_id, user_id, status, note, created_at, reviewed_at, reviewed_by_user_id)
           VALUES(${published_activity_id}, ${student2_user_id}, 'APPROVED', '已通过示例', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ${tutor_user_id});"
-student3_user_id="$(sql_scalar "SELECT id FROM \"user\" WHERE user_type='STUDENT' AND user_no='2003' LIMIT 1;")"
+student3_user_id="$(sql_scalar "SELECT id FROM \"user\" WHERE user_type='STUDENT' AND user_no='2023121003' LIMIT 1;")"
 sql_exec "INSERT OR IGNORE INTO activity_signup(activity_id, user_id, status, note, created_at, reviewed_at, reviewed_by_user_id)
           VALUES(${published_activity_id}, ${student3_user_id}, 'REJECTED', '名额有限', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ${tutor_user_id});"
 
@@ -173,11 +184,13 @@ echo
 cat <<EOF
 Seed completed.
 
-Login accounts (userType + id + password):
-  - Admin (school): TEACHER / 4001 / Admin@123
-  - Admin (college): TEACHER / 1100 / AdminC@123
-  - Tutor (teacher): TEACHER / 1001 / Teacher@123
-  - Student: STUDENT / 2001 / Student@123  (and 2002..2010 same password)
+登录账号 (用户类型 + 学号/工号 + 密码):
+  - 校级管理员: TEACHER / 4001 / Admin@123
+  - 院级管理员: TEACHER / 1100 / AdminC@123
+  - 导师(张老师): TEACHER / 1001 / Teacher@123
+  - 学生(王小明): STUDENT / 2023121001 / Student@123
+  - 学生(李晓华): STUDENT / 2023121002 / Student@123
+  - ... (2023121003~2023121010 密码相同)
 
 Backend must run with APP_PASSWORD_PEPPER='${PEPPER}' for these passwords to work.
 EOF

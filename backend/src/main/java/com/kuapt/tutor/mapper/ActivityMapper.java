@@ -13,16 +13,17 @@ import org.apache.ibatis.annotations.Update;
 @Mapper
 public interface ActivityMapper {
   @Select(
-      "SELECT id, class_id AS classId, term, title, description, capacity, requires_review AS requiresReview, status, "
-          + "created_by_user_id AS createdByUserId, created_at AS createdAt "
-          + "FROM activity WHERE id = #{activityId} LIMIT 1")
+      "SELECT a.id, a.class_id AS classId, c.name AS className, a.term, a.title, a.description, a.capacity, a.requires_review AS requiresReview, a.status, "
+          + "a.created_by_user_id AS createdByUserId, a.created_at AS createdAt "
+          + "FROM activity a JOIN \"class\" c ON c.id = a.class_id WHERE a.id = #{activityId} LIMIT 1")
   ActivityRecord findById(@Param("activityId") long activityId);
 
   @Select(
       "<script>"
-          + "SELECT a.id, a.class_id AS classId, a.term, a.title, a.description, a.capacity, "
+          + "SELECT a.id, a.class_id AS classId, c.name AS className, a.term, a.title, a.description, a.capacity, "
           + "a.requires_review AS requiresReview, a.status, a.created_by_user_id AS createdByUserId, a.created_at AS createdAt "
           + "FROM activity a "
+          + "JOIN \"class\" c ON c.id = a.class_id "
           + "JOIN class_student cs ON cs.class_id = a.class_id AND cs.student_user_id = #{studentUserId} "
           + "WHERE a.id = #{activityId} "
           + "LIMIT 1"
@@ -31,7 +32,7 @@ public interface ActivityMapper {
 
   @Select(
       "<script>"
-          + "SELECT a.id, a.class_id AS classId, a.term, a.title, a.description, a.capacity, "
+          + "SELECT a.id, a.class_id AS classId, c.name AS className, a.term, a.title, a.description, a.capacity, "
           + "a.requires_review AS requiresReview, a.status, a.created_by_user_id AS createdByUserId, a.created_at AS createdAt "
           + "FROM activity a "
           + "JOIN \"class\" c ON c.id = a.class_id "
@@ -66,13 +67,14 @@ public interface ActivityMapper {
 
   @Select(
       "<script>"
-          + "SELECT id, class_id AS classId, term, title, description, capacity, requires_review AS requiresReview, status, "
-          + "created_by_user_id AS createdByUserId, created_at AS createdAt "
-          + "FROM activity "
+          + "SELECT a.id, a.class_id AS classId, c.name AS className, a.term, a.title, a.description, a.capacity, a.requires_review AS requiresReview, a.status, "
+          + "a.created_by_user_id AS createdByUserId, a.created_at AS createdAt "
+          + "FROM activity a "
+          + "JOIN \"class\" c ON c.id = a.class_id "
           + "WHERE 1=1 "
-          + "<if test='term != null and term != \"\"'> AND term = #{term} </if>"
-          + "<if test='status != null'> AND status = #{status} </if>"
-          + "ORDER BY created_at DESC, id DESC "
+          + "<if test='term != null and term != \"\"'> AND a.term = #{term} </if>"
+          + "<if test='status != null'> AND a.status = #{status} </if>"
+          + "ORDER BY a.created_at DESC, a.id DESC "
           + "LIMIT #{limit} OFFSET #{offset}"
           + "</script>")
   List<ActivityRecord> listAll(@Param("term") String term, @Param("status") ActivityStatus status, @Param("limit") int limit, @Param("offset") int offset);
@@ -90,9 +92,10 @@ public interface ActivityMapper {
 
   @Select(
       "<script>"
-          + "SELECT a.id, a.class_id AS classId, a.term, a.title, a.description, a.capacity, a.requires_review AS requiresReview, a.status, "
+          + "SELECT a.id, a.class_id AS classId, c.name AS className, a.term, a.title, a.description, a.capacity, a.requires_review AS requiresReview, a.status, "
           + "a.created_by_user_id AS createdByUserId, a.created_at AS createdAt "
           + "FROM activity a "
+          + "JOIN \"class\" c ON c.id = a.class_id "
           + "JOIN class_student cs ON cs.class_id = a.class_id AND cs.student_user_id = #{studentUserId} "
           + "WHERE 1=1 "
           + "<if test='term != null and term != \"\"'> AND a.term = #{term} </if>"
@@ -136,7 +139,7 @@ public interface ActivityMapper {
 
   @Select(
       "<script>"
-          + "SELECT a.id, a.class_id AS classId, a.term, a.title, a.description, a.capacity, a.requires_review AS requiresReview, a.status, "
+          + "SELECT a.id, a.class_id AS classId, c.name AS className, a.term, a.title, a.description, a.capacity, a.requires_review AS requiresReview, a.status, "
           + "a.created_by_user_id AS createdByUserId, a.created_at AS createdAt "
           + "FROM activity a "
           + "JOIN \"class\" c ON c.id = a.class_id "

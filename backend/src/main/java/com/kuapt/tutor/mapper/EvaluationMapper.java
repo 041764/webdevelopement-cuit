@@ -10,15 +10,25 @@ import org.apache.ibatis.annotations.Select;
 @Mapper
 public interface EvaluationMapper {
   @Select(
-      "SELECT id, evaluator_user_id AS evaluatorUserId, evaluatee_user_id AS evaluateeUserId, term, score_total AS scoreTotal, comment, created_at AS createdAt "
-          + "FROM evaluation WHERE id = #{id} LIMIT 1")
+      "SELECT e.id, e.evaluator_user_id AS evaluatorUserId, u1.user_no AS evaluatorUserNo, u1.name AS evaluatorUserName, "
+          + "e.evaluatee_user_id AS evaluateeUserId, u2.user_no AS evaluateeUserNo, u2.name AS evaluateeUserName, "
+          + "e.term, e.score_total AS scoreTotal, e.comment, e.created_at AS createdAt "
+          + "FROM evaluation e "
+          + "JOIN \"user\" u1 ON u1.id = e.evaluator_user_id "
+          + "JOIN \"user\" u2 ON u2.id = e.evaluatee_user_id "
+          + "WHERE e.id = #{id} LIMIT 1")
   EvaluationRecord findById(@Param("id") long id);
 
   @Select(
-      "SELECT id, evaluator_user_id AS evaluatorUserId, evaluatee_user_id AS evaluateeUserId, term, score_total AS scoreTotal, comment, created_at AS createdAt "
-          + "FROM evaluation WHERE evaluatee_user_id = #{userId} "
-          + "AND (#{term} IS NULL OR term = #{term}) "
-          + "ORDER BY id DESC LIMIT #{limit} OFFSET #{offset}")
+      "SELECT e.id, e.evaluator_user_id AS evaluatorUserId, u1.user_no AS evaluatorUserNo, u1.name AS evaluatorUserName, "
+          + "e.evaluatee_user_id AS evaluateeUserId, u2.user_no AS evaluateeUserNo, u2.name AS evaluateeUserName, "
+          + "e.term, e.score_total AS scoreTotal, e.comment, e.created_at AS createdAt "
+          + "FROM evaluation e "
+          + "JOIN \"user\" u1 ON u1.id = e.evaluator_user_id "
+          + "JOIN \"user\" u2 ON u2.id = e.evaluatee_user_id "
+          + "WHERE e.evaluatee_user_id = #{userId} "
+          + "AND (#{term} IS NULL OR e.term = #{term}) "
+          + "ORDER BY e.id DESC LIMIT #{limit} OFFSET #{offset}")
   List<EvaluationRecord> listForStudent(
       @Param("userId") long userId, @Param("term") String term, @Param("limit") int limit, @Param("offset") int offset);
 
@@ -27,10 +37,13 @@ public interface EvaluationMapper {
   long countForStudent(@Param("userId") long userId, @Param("term") String term);
 
   @Select(
-      "SELECT e.id, e.evaluator_user_id AS evaluatorUserId, e.evaluatee_user_id AS evaluateeUserId, e.term, e.score_total AS scoreTotal, e.comment, e.created_at AS createdAt "
+      "SELECT e.id, e.evaluator_user_id AS evaluatorUserId, u1.user_no AS evaluatorUserNo, u1.name AS evaluatorUserName, "
+          + "e.evaluatee_user_id AS evaluateeUserId, u2.user_no AS evaluateeUserNo, u2.name AS evaluateeUserName, "
+          + "e.term, e.score_total AS scoreTotal, e.comment, e.created_at AS createdAt "
           + "FROM evaluation e "
-          + "JOIN \"user\" stu ON stu.id = e.evaluatee_user_id "
-          + "WHERE stu.college_id = #{collegeId} AND (#{term} IS NULL OR e.term = #{term}) "
+          + "JOIN \"user\" u1 ON u1.id = e.evaluator_user_id "
+          + "JOIN \"user\" u2 ON u2.id = e.evaluatee_user_id "
+          + "WHERE u2.college_id = #{collegeId} AND (#{term} IS NULL OR e.term = #{term}) "
           + "ORDER BY e.id DESC LIMIT #{limit} OFFSET #{offset}")
   List<EvaluationRecord> listForCollege(
       @Param("collegeId") long collegeId, @Param("term") String term, @Param("limit") int limit, @Param("offset") int offset);
@@ -41,8 +54,12 @@ public interface EvaluationMapper {
   long countForCollege(@Param("collegeId") long collegeId, @Param("term") String term);
 
   @Select(
-      "SELECT e.id, e.evaluator_user_id AS evaluatorUserId, e.evaluatee_user_id AS evaluateeUserId, e.term, e.score_total AS scoreTotal, e.comment, e.created_at AS createdAt "
+      "SELECT e.id, e.evaluator_user_id AS evaluatorUserId, u1.user_no AS evaluatorUserNo, u1.name AS evaluatorUserName, "
+          + "e.evaluatee_user_id AS evaluateeUserId, u2.user_no AS evaluateeUserNo, u2.name AS evaluateeUserName, "
+          + "e.term, e.score_total AS scoreTotal, e.comment, e.created_at AS createdAt "
           + "FROM evaluation e "
+          + "JOIN \"user\" u1 ON u1.id = e.evaluator_user_id "
+          + "JOIN \"user\" u2 ON u2.id = e.evaluatee_user_id "
           + "WHERE EXISTS (" +
           "  SELECT 1 FROM class_student cs " +
           "  JOIN class_tutor ct ON ct.class_id = cs.class_id " +
@@ -64,8 +81,13 @@ public interface EvaluationMapper {
   long countForTutor(@Param("tutorUserId") long tutorUserId, @Param("term") String term);
 
   @Select(
-      "SELECT id, evaluator_user_id AS evaluatorUserId, evaluatee_user_id AS evaluateeUserId, term, score_total AS scoreTotal, comment, created_at AS createdAt "
-          + "FROM evaluation WHERE (#{term} IS NULL OR term = #{term}) ORDER BY id DESC LIMIT #{limit} OFFSET #{offset}")
+      "SELECT e.id, e.evaluator_user_id AS evaluatorUserId, u1.user_no AS evaluatorUserNo, u1.name AS evaluatorUserName, "
+          + "e.evaluatee_user_id AS evaluateeUserId, u2.user_no AS evaluateeUserNo, u2.name AS evaluateeUserName, "
+          + "e.term, e.score_total AS scoreTotal, e.comment, e.created_at AS createdAt "
+          + "FROM evaluation e "
+          + "JOIN \"user\" u1 ON u1.id = e.evaluator_user_id "
+          + "JOIN \"user\" u2 ON u2.id = e.evaluatee_user_id "
+          + "WHERE (#{term} IS NULL OR e.term = #{term}) ORDER BY e.id DESC LIMIT #{limit} OFFSET #{offset}")
   List<EvaluationRecord> listAll(@Param("term") String term, @Param("limit") int limit, @Param("offset") int offset);
 
   @Select("SELECT COUNT(1) FROM evaluation WHERE (#{term} IS NULL OR term = #{term})")

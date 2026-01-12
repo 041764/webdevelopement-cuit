@@ -1,5 +1,7 @@
 package com.kuapt.tutor.mapper;
 
+import com.kuapt.tutor.service.LookupService;
+import java.util.List;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -15,4 +17,7 @@ public interface CollegeMapper {
 
   @Insert("INSERT INTO college(name) VALUES(#{name})")
   int insert(@Param("name") String name);
+
+  @Select("SELECT id, name FROM college ORDER BY name ASC")
+  List<LookupService.CollegeOption> listAll();
 }

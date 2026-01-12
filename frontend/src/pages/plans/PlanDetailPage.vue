@@ -1,14 +1,14 @@
 <template>
-  <PageHeader title="计划详情" description="对接 /plans/{id} + items 操作。" />
+  <PageHeader title="计划详情" description="查看和管理计划条目。" />
 
   <n-card>
     <AsyncState :loading="loading" :error="error" :empty="!plan" @retry="fetchDetail">
       <n-descriptions :column="2" bordered>
         <n-descriptions-item label="ID">{{ plan?.id }}</n-descriptions-item>
-        <n-descriptions-item label="ownerType">{{ plan?.ownerType }}</n-descriptions-item>
-        <n-descriptions-item label="title">{{ plan?.title }}</n-descriptions-item>
-        <n-descriptions-item label="term">{{ plan?.term }}</n-descriptions-item>
-        <n-descriptions-item label="progress" :span="2">
+        <n-descriptions-item label="所属类型">{{ plan?.ownerType }}</n-descriptions-item>
+        <n-descriptions-item label="标题">{{ plan?.title }}</n-descriptions-item>
+        <n-descriptions-item label="学期">{{ plan?.term }}</n-descriptions-item>
+        <n-descriptions-item label="进度" :span="2">
           {{ progressText }}
         </n-descriptions-item>
       </n-descriptions>
@@ -17,7 +17,7 @@
 
       <n-space wrap :size="12" align="center">
         <n-input v-model:value="newTitle" placeholder="新增条目标题" style="width: 260px" />
-        <n-input v-model:value="newDueDate" placeholder="dueDate（YYYY-MM-DD，可选）" style="width: 220px" clearable />
+        <n-input v-model:value="newDueDate" placeholder="截止日期（YYYY-MM-DD，可选）" style="width: 220px" clearable />
         <n-button type="primary" :loading="adding" :disabled="newTitle.trim().length === 0" @click="onAddItem">新增条目</n-button>
       </n-space>
 
@@ -26,7 +26,7 @@
 
         <n-list v-else bordered>
           <n-list-item v-for="item in plan?.items" :key="item.id">
-            <n-thing :title="item.title" :description="`status=${item.status}  dueDate=${item.dueDate ?? '-'}`">
+            <n-thing :title="item.title" :description="`状态：${item.status}  截止日期：${item.dueDate ?? '-'}`">
               <template #action>
                 <n-space :size="8">
                   <n-select
@@ -91,9 +91,9 @@ const newTitle = ref('')
 const newDueDate = ref('')
 
 const statusOptions = [
-  { label: 'todo', value: 'todo' },
-  { label: 'doing', value: 'doing' },
-  { label: 'done', value: 'done' },
+  { label: '待办', value: 'todo' },
+  { label: '进行中', value: 'doing' },
+  { label: '已完成', value: 'done' },
 ]
 
 const statusDraft = reactive<Record<number, PlanItemStatus>>({})
@@ -184,7 +184,7 @@ async function onEdit(itemId: number) {
         }),
         h(NInput, {
           value: dueDate.value,
-          placeholder: 'dueDate（YYYY-MM-DD，可选）',
+          placeholder: '截止日期（YYYY-MM-DD，可选）',
           clearable: true,
           onUpdateValue: (v) => {
             dueDate.value = v

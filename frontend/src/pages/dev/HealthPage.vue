@@ -1,12 +1,12 @@
 <template>
-  <PageHeader title="后端健康检查" description="调用 GET /health 验证后端是否可用。" />
+  <PageHeader title="后端健康检查" description="验证后端服务是否可用。" />
 
   <n-card>
     <AsyncState :loading="loading" :error="error" :empty="false" @retry="fetchHealth">
       <n-space align="center" :size="12">
-        <n-tag type="success" v-if="status === 'ok'">OK</n-tag>
-        <n-tag type="warning" v-else>Unknown</n-tag>
-        <div style="color: var(--muted);">status: {{ status }}</div>
+        <n-tag type="success" v-if="status === 'ok'">正常</n-tag>
+        <n-tag type="warning" v-else>未知</n-tag>
+        <div style="color: var(--muted);">状态: {{ status }}</div>
         <div style="flex: 1;" />
         <n-button secondary @click="fetchHealth">刷新</n-button>
       </n-space>

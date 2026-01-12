@@ -1,5 +1,5 @@
 <template>
-  <PageHeader title="活动详情" description="对接 /activities/{id} 与报名/发布。">
+  <PageHeader title="活动详情" description="查看活动详细信息并进行报名管理。">
     <template #actions>
       <n-button secondary @click="goSignups">报名列表</n-button>
     </template>
@@ -10,13 +10,13 @@
       <n-descriptions :column="2" bordered>
         <n-descriptions-item label="ID">{{ activity?.id }}</n-descriptions-item>
         <n-descriptions-item label="状态">{{ activity?.status }}</n-descriptions-item>
-        <n-descriptions-item label="title">{{ activity?.title }}</n-descriptions-item>
-        <n-descriptions-item label="term">{{ activity?.term }}</n-descriptions-item>
-        <n-descriptions-item label="classId">{{ activity?.classId }}</n-descriptions-item>
-        <n-descriptions-item label="capacity">{{ activity?.capacity ?? '∞' }}</n-descriptions-item>
-        <n-descriptions-item label="requiresReview">{{ activity?.requiresReview }}</n-descriptions-item>
-        <n-descriptions-item label="createdAt">{{ activity?.createdAt }}</n-descriptions-item>
-        <n-descriptions-item label="description" :span="2">
+        <n-descriptions-item label="标题">{{ activity?.title }}</n-descriptions-item>
+        <n-descriptions-item label="学期">{{ activity?.term }}</n-descriptions-item>
+        <n-descriptions-item label="班级">{{ activity?.className || `班级ID: ${activity?.classId}` }}</n-descriptions-item>
+        <n-descriptions-item label="容量">{{ activity?.capacity ?? '∞' }}</n-descriptions-item>
+        <n-descriptions-item label="需要审核">{{ activity?.requiresReview }}</n-descriptions-item>
+        <n-descriptions-item label="创建时间">{{ activity?.createdAt }}</n-descriptions-item>
+        <n-descriptions-item label="描述" :span="2">
           {{ activity?.description || '-' }}
         </n-descriptions-item>
       </n-descriptions>

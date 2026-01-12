@@ -1178,6 +1178,124 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/lookup/students": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 获取学生列表（用于下拉选择） */
+        get: {
+            parameters: {
+                query?: {
+                    term?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["StudentOption"][];
+                    };
+                };
+                401: components["responses"]["Error401"];
+                403: components["responses"]["Error403"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/lookup/classes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 获取班级列表（用于下拉选择） */
+        get: {
+            parameters: {
+                query?: {
+                    term?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ClassOption"][];
+                    };
+                };
+                401: components["responses"]["Error401"];
+                403: components["responses"]["Error403"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/lookup/colleges": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 获取学院列表（用于下拉选择） */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["CollegeOption"][];
+                    };
+                };
+                401: components["responses"]["Error401"];
+                403: components["responses"]["Error403"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1189,6 +1307,52 @@ export interface components {
             message: string;
             requestId?: string;
             details?: Record<string, never>;
+        };
+        StudentOption: {
+            /**
+             * Format: int64
+             * @description 用户ID
+             */
+            id: number;
+            /**
+             * @description 学号
+             * @example 2023121001
+             */
+            userNo: string;
+            /**
+             * @description 姓名
+             * @example 王小明
+             */
+            name: string;
+        };
+        ClassOption: {
+            /**
+             * Format: int64
+             * @description 班级ID
+             */
+            id: number;
+            /**
+             * @description 班级名称
+             * @example 软件2301
+             */
+            name: string;
+            /**
+             * @description 所属学院名称
+             * @example 信息工程学院
+             */
+            collegeName: string;
+        };
+        CollegeOption: {
+            /**
+             * Format: int64
+             * @description 学院ID
+             */
+            id: number;
+            /**
+             * @description 学院名称
+             * @example 信息工程学院
+             */
+            name: string;
         };
         /** @enum {string} */
         UserType: "STUDENT" | "TEACHER";
@@ -1269,6 +1433,8 @@ export interface components {
             id: number;
             /** Format: int64 */
             classId: number;
+            /** @description 班级名称 */
+            className?: string;
             /** @example 2026-02-23-1 */
             term: string;
             title: string;
@@ -1302,6 +1468,10 @@ export interface components {
             activityId: number;
             /** Format: int64 */
             userId: number;
+            /** @description 用户学号/工号 */
+            userNo?: string;
+            /** @description 用户姓名 */
+            userName?: string;
             status: components["schemas"]["SignupStatus"];
             /** Format: date-time */
             createdAt: string;
@@ -1404,8 +1574,16 @@ export interface components {
             id: number;
             /** Format: int64 */
             evaluatorUserId: number;
+            /** @description 评价人学号/工号 */
+            evaluatorUserNo?: string;
+            /** @description 评价人姓名 */
+            evaluatorUserName?: string;
             /** Format: int64 */
             evaluateeUserId: number;
+            /** @description 被评价人学号/工号 */
+            evaluateeUserNo?: string;
+            /** @description 被评价人姓名 */
+            evaluateeUserName?: string;
             term: string;
             scoreTotal: number;
             comment?: string | null;

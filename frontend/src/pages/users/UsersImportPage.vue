@@ -1,5 +1,5 @@
 <template>
-  <PageHeader title="用户 CSV 导入" description="对接 POST /users/import（multipart/form-data）。" />
+  <PageHeader title="用户 CSV 导入" description="通过 CSV 文件批量导入用户。" />
 
   <n-card>
     <n-space vertical :size="16">
@@ -12,14 +12,16 @@
       </n-space>
 
       <n-alert type="info" :show-icon="true">
-        CSV 为 UTF-8 逗号分隔，可包含表头，字段：id,name,collegeName
+        CSV 为 UTF-8 逗号分隔，可包含表头。<br/>
+        学生字段：id,name,collegeName,className（className 可选，用于关联班级）<br/>
+        教师字段：id,name,collegeName
       </n-alert>
 
       <AsyncState :loading="loading" :error="error" :empty="result === null" @retry="onSubmit">
         <n-grid :cols="24" :x-gap="16" :y-gap="16">
-          <n-grid-item :span="8"><n-statistic label="created" :value="result?.created ?? 0" /></n-grid-item>
-          <n-grid-item :span="8"><n-statistic label="updated" :value="result?.updated ?? 0" /></n-grid-item>
-          <n-grid-item :span="8"><n-statistic label="failed" :value="result?.failed ?? 0" /></n-grid-item>
+          <n-grid-item :span="8"><n-statistic label="新增" :value="result?.created ?? 0" /></n-grid-item>
+          <n-grid-item :span="8"><n-statistic label="更新" :value="result?.updated ?? 0" /></n-grid-item>
+          <n-grid-item :span="8"><n-statistic label="失败" :value="result?.failed ?? 0" /></n-grid-item>
         </n-grid>
 
         <div style="margin-top: var(--s-4)">
@@ -58,8 +60,8 @@ const message = useMessage()
 
 const userType = ref<UserType>('STUDENT')
 const userTypeOptions = [
-  { label: 'STUDENT', value: 'STUDENT' },
-  { label: 'TEACHER', value: 'TEACHER' },
+  { label: '学生', value: 'STUDENT' },
+  { label: '教师', value: 'TEACHER' },
 ]
 
 const file = ref<File | null>(null)
@@ -72,8 +74,8 @@ const result = ref<ImportUsersResult | null>(null)
 const canSubmit = computed(() => file.value !== null)
 
 const columns: DataTableColumns<{ row: number; reason: string }> = [
-  { title: 'row', key: 'row', width: 120 },
-  { title: 'reason', key: 'reason' },
+  { title: '行号', key: 'row', width: 120 },
+  { title: '失败原因', key: 'reason' },
 ]
 
 function onFileListUpdate(files: UploadFileInfo[]) {

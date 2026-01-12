@@ -1,5 +1,5 @@
 <template>
-  <PageHeader title="活动" description="对接 /activities 列表与筛选。">
+  <PageHeader title="活动" description="浏览和管理所有活动。">
     <template #actions>
       <n-button type="primary" @click="goCreate">创建活动</n-button>
     </template>
@@ -7,7 +7,7 @@
 
   <n-card>
     <n-space wrap :size="12" align="center">
-      <n-input v-model:value="term" placeholder="term（可选）" clearable style="width: 220px" />
+      <n-input v-model:value="term" placeholder="学期（可选）" clearable style="width: 220px" />
       <n-select v-model:value="status" :options="statusOptions" clearable placeholder="状态" style="width: 180px" />
       <n-button secondary @click="fetchList">查询</n-button>
     </n-space>
@@ -51,14 +51,15 @@ const page = ref(1)
 const size = ref(20)
 
 const statusOptions = [
-  { label: 'DRAFT', value: 'DRAFT' },
-  { label: 'PUBLISHED', value: 'PUBLISHED' },
-  { label: 'CLOSED', value: 'CLOSED' },
+  { label: '草稿', value: 'DRAFT' },
+  { label: '已发布', value: 'PUBLISHED' },
+  { label: '已关闭', value: 'CLOSED' },
 ]
 
 const columns: DataTableColumns<Activity> = [
   { title: 'ID', key: 'id', width: 80 },
   { title: '标题', key: 'title' },
+  { title: '班级', key: 'className', width: 150 },
   { title: '学期', key: 'term', width: 160 },
   { title: '状态', key: 'status', width: 120 },
   { title: '容量', key: 'capacity', width: 100 },

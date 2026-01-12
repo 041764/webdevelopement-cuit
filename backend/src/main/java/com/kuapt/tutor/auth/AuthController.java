@@ -4,6 +4,7 @@ import com.kuapt.tutor.auth.dto.LoginRequest;
 import com.kuapt.tutor.auth.dto.LogoutRequest;
 import com.kuapt.tutor.auth.dto.RefreshRequest;
 import com.kuapt.tutor.exception.ApiException;
+import com.kuapt.tutor.mapper.CollegeMapper;
 import com.kuapt.tutor.mapper.RoleMapper;
 import com.kuapt.tutor.mapper.UserMapper;
 import com.kuapt.tutor.model.UserRecord;
@@ -24,11 +25,13 @@ public class AuthController {
   private final AuthService authService;
   private final UserMapper userMapper;
   private final RoleMapper roleMapper;
+  private final CollegeMapper collegeMapper;
 
-  public AuthController(AuthService authService, UserMapper userMapper, RoleMapper roleMapper) {
+  public AuthController(AuthService authService, UserMapper userMapper, RoleMapper roleMapper, CollegeMapper collegeMapper) {
     this.authService = authService;
     this.userMapper = userMapper;
     this.roleMapper = roleMapper;
+    this.collegeMapper = collegeMapper;
   }
 
   @PostMapping("/login")
@@ -59,12 +62,18 @@ public class AuthController {
     }
     var roles = roleMapper.listRoleCodes(userId);
 
+    String collegeName = null;
+    if (user.collegeId() != null) {
+      collegeName = collegeMapper.findNameById(user.collegeId());
+    }
+
     Map<String, Object> out = new HashMap<>();
     out.put("userId", user.userId());
     out.put("userType", user.userType());
     out.put("id", user.id());
     out.put("name", user.name());
     out.put("collegeId", user.collegeId());
+    out.put("collegeName", collegeName);
     out.put("status", user.status());
     out.put("roles", roles);
     return out;

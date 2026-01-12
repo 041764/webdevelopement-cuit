@@ -1,16 +1,13 @@
 <template>
-  <PageHeader title="重置用户密码" description="对接 POST /users/{userId}/password:reset。" />
+  <PageHeader title="重置用户密码" description="管理员重置用户密码。" />
 
   <n-card>
     <n-form :model="model" label-placement="top">
       <n-grid :cols="24" :x-gap="16" :y-gap="12">
-        <n-form-item-gi :span="12" label="userId">
-          <n-input-number v-model:value="model.userId" :min="1" style="width: 100%" />
-        </n-form-item-gi>
-        <n-form-item-gi :span="12" label="userType">
+        <n-form-item-gi :span="12" label="用户类型">
           <n-select v-model:value="model.userType" :options="userTypeOptions" style="width: 100%" />
         </n-form-item-gi>
-        <n-form-item-gi :span="12" label="账号（id=学号/工号）">
+        <n-form-item-gi :span="12" label="账号（学号/工号）">
           <n-input v-model:value="model.userNo" placeholder="例如：2020123456" />
         </n-form-item-gi>
         <n-form-item-gi :span="12" label="新密码">
@@ -33,7 +30,6 @@ import {
   NFormItemGi,
   NGrid,
   NInput,
-  NInputNumber,
   NSelect,
   NSpace,
   useMessage,
@@ -42,7 +38,7 @@ import { computed, reactive, ref } from 'vue'
 
 import PageHeader from '@/components/PageHeader.vue'
 import { toApiError } from '@/api/errors'
-import { resetUserPassword } from '@/api/users'
+import { resetUserPasswordByNo } from '@/api/users'
 import type { UserType } from '@/api/schema'
 import { deriveClientCredentials } from '@/utils/credentials'
 
@@ -51,18 +47,17 @@ const message = useMessage()
 const submitting = ref(false)
 
 const model = reactive({
-  userId: 1 as number,
   userType: 'STUDENT' as UserType,
   userNo: '',
   password: '',
 })
 
 const userTypeOptions = [
-  { label: 'STUDENT', value: 'STUDENT' },
-  { label: 'TEACHER', value: 'TEACHER' },
+  { label: '学生', value: 'STUDENT' },
+  { label: '教师', value: 'TEACHER' },
 ]
 
-const canSubmit = computed(() => model.userId > 0 && model.userNo.trim().length > 0 && model.password.trim().length > 0)
+const canSubmit = computed(() => model.userNo.trim().length > 0 && model.password.trim().length > 0)
 
 async function onSubmit() {
   if (!canSubmit.value) return
@@ -70,7 +65,12 @@ async function onSubmit() {
   submitting.value = true
   try {
     const { clientSalt, clientHash } = await deriveClientCredentials(model.userType, model.userNo, model.password)
-    await resetUserPassword(model.userId, { clientSalt, clientHash })
+    await resetUserPasswordByNo({
+      userType: model.userType,
+      userNo: model.userNo,
+      clientSalt,
+      clientHash,
+    })
     message.success('已重置')
     model.password = ''
   } catch (e) {
